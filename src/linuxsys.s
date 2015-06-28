@@ -8,10 +8,13 @@
 
 .include "include/macros.s"
 .include "include/globals.s"
+.include "include/fcntl.s"
+.include "include/string.s"
 .align word_s	// all instructions 8-byte (64bit) aligned
 // global functions in this file:
 .global exit_linux
 .global write_linux
+.global open_linux
 
 exit_linux:
 /*=============================================================================
@@ -56,3 +59,20 @@ register conventions:
 	svc #0
 	m_poplink
 	ret
+
+open_linux:
+/*=============================================================================
+linux system call #1024 - open
+register conventions:
+        x0, (input) start address of a string to path
+        x1 (input) access mode
+	x2 (input) chmod permissions when using O_CREAT
+=============================================================================*/
+// linux access mode definitions can be found from include/uapi/asm-generic/fcntl.h
+// and so on. Ours are in include/fcntl.s
+        m_pushlink
+	mov x8, #1024
+	svc #0
+        m_poplink
+        ret
+

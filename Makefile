@@ -13,7 +13,8 @@ LDFLAGS = -T src/linker.ld
 
 TARGET = armv8bin
 HEADERS 	= include/macros.s \
-	 	  include/globals.s
+	 	  include/globals.s \
+		  include/fcntl.s
 
 SOURCES       = src/main.s \
 		src/debug.s \

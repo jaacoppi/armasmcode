@@ -16,7 +16,31 @@
 
 .text
 
-// TODO: make putc a display driver - keep track of x/y and special chars
+write:
+/*=============================================================================
+a stub to control output destination
+when in linux user mode, branch to write_linux
+when in qemu-system-aarch64 full system emulation, branch to puts
+=============================================================================*/
+	m_pushlink
+//	bl puts
+	bl write_linux
+	m_poplink
+	ret
+
+fopen:
+/*=============================================================================
+a stub to call linux syscall fopen
+NOTE: posix wants x1 to be a string (r,w and so on). We use ACCESSMODE
+register conventions:
+	x0, (input) start address of a string to path
+	x1 (input) ACCESSMODE
+=============================================================================*/
+	m_pushlink
+	bl open_linux
+	m_poplink
+	ret
+
 putc:
 /*=============================================================================
 print a character to the display device set by =DISPLAY_BASE
@@ -48,19 +72,6 @@ register conventions:
 	prints_exit:
 	m_poplink
 	ret
-
-write:
-/*=============================================================================
-a stub to control output destination
-when in linux user mode, branch to write_linux
-when in qemu-system-aarch64 full system emulation, branch to puts
-=============================================================================*/
-	m_pushlink
-//	bl puts
-	bl write_linux
-	m_poplink
-	ret
-
 
 write_int:
 /*=============================================================================
