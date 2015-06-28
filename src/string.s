@@ -3,8 +3,8 @@
 // file: string.s
 // description
 
-.include "include/macros.s"
-.include "include/globals.s"
+.include "macros.s"
+.include "globals.s"
 .align word_s
 // global functions in this file:
 .global strlen

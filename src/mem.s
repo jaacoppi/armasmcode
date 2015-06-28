@@ -6,8 +6,8 @@
 // TODO: make sure we're not wasting a 0x1000 bytes here and there 
 // with unneeded .space 0x1000 aligning
 
-.include "include/macros.s"
-.include "include/globals.s"
+.include "macros.s"
+.include "globals.s"
 .align word_s
 // global functions in this file:
 .global kheap_init

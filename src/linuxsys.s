@@ -6,10 +6,10 @@
 // The list of linux system calls can be found in the kernel sources at
 // include/uapi/asm-generic/unistd.h. These are based on linux 4.1
 
-.include "include/macros.s"
-.include "include/globals.s"
-.include "include/fcntl.s"
-.include "include/string.s"
+.include "macros.s"
+.include "globals.s"
+.include "fcntl.s"
+
 .align word_s	// all instructions 8-byte (64bit) aligned
 // global functions in this file:
 .global exit_linux

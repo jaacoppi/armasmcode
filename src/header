@@ -3,7 +3,7 @@
 // file:
 // description
 
-.include "include/macros.s"
-.include "include/globals.s"
+.include "macros.s"
+.include "globals.s"
 .align word_s	// all instructions 8-byte (64bit) aligned
 // global functions in this file:

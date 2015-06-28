@@ -6,7 +6,7 @@
 ####### Compiler, tools and options
 
 AS	= aarch64-linux-gnu-as
-ASFLAGS = -mverbose-error
+ASFLAGS = -mverbose-error -I include
 LD	= aarch64-linux-gnu-ld
 LDFLAGS = -T src/linker.ld
 ####### Files

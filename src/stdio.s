@@ -3,8 +3,8 @@
 // file: stdio.s
 // input/output routines
 
-.include "include/macros.s"
-.include "include/globals.s"
+.include "macros.s"
+.include "globals.s"
 
 .align word_s
 // global functions in this file:

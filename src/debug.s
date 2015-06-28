@@ -3,8 +3,8 @@
 // file: debug.s
 // subroutines for debugging stack and register states
 
-.include "include/macros.s"
-.include "include/globals.s"
+.include "macros.s"
+.include "globals.s"
 .align word_s
 // global functions in this file:
 .global regdump

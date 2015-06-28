@@ -3,9 +3,9 @@
 // file: main.s
 // Main program flow
 
-.include "include/macros.s"
-.include "include/globals.s"
-.include "include/fcntl.s"
+.include "macros.s"
+.include "globals.s"
+.include "fcntl.s"
 .align word_s	// all instructions are word aligned.
 // global functions in this file:
 .global _start

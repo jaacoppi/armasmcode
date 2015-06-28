@@ -3,8 +3,8 @@
 // file: lean.s
 // LEAN filesystem implementation. See http://freedos-32.sourceforge.net/lean/
 
-.include "include/macros.s"
-.include "include/globals.s"
+.include "macros.s"
+.include "globals.s"
 .align word_s
 // global functions in this file:
 
