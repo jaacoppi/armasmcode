@@ -5,41 +5,79 @@
 
 ####### Compiler, tools and options
 
-AS	= aarch64-linux-gnu-as
-ASFLAGS = -mverbose-error -I include
-LD	= aarch64-linux-gnu-ld
+# for freebsd
+AS	= aarch64-freebsd-as
+# for some reasons, freebsd can't handle ASFLAGS
+AS	+= -mverbose-error -I include
+LD	= aarch64-freebsd-ld
+
+# for linux
+#AS	= aarch64-linux-gnu-as
+#ASFLAGS = -mverbose-error -I include
+#LD	= aarch64-linux-gnu-ld
+
+# linker script for kernel
 LDFLAGS = -T src/linker.ld
+# for creating STDLIB
+AR	= ar
+ARFLAGS = -rcs
+
+####### for Qemu
+QEMU_SYSTEM_AARCH64	= qemu-system-aarch64
+QEMU_AARCH64		= qemu-aarch64-static ## for freebsd
 ####### Files
 
-TARGET = armv8bin
 HEADERS 	= include/macros.s \
 	 	  include/globals.s \
 		  include/fcntl.s
 
-SOURCES       = src/main.s \
-		src/debug.s \
-		src/stdio.s \
-		src/string.s \
-		src/stdlib.s \
-		src/mem.s \
-		src/linuxsys.s
-
-OBJECTS       = src/main.o \
+### Kernel
+KERNEL = armv8bin
+KERNEL_OBJS	= src/main.o \
 		src/debug.o \
-		src/stdio.o \
+		src/mem.o
+
+### STDLIB
+STDLIB = stdlib.a
+STDLIB_OBJS	= src/stdio.o \
 		src/string.o \
 		src/stdlib.o \
-		src/mem.o \
 		src/linuxsys.o
 
-all: Makefile $(TARGET)
+### Linux userland programs
+CAT = cat
+CAT_OBJS	= userland/cat.o
+NEWFILE = newfile
+NEWFILE_OBJS = userland/newfile.o
+READELF = readelf
+READELF_OBJS = userland/readelf.o
 
-$(TARGET):  $(OBJECTS)  
-	$(LD) $(LDFLAGS) -o $(TARGET) $(OBJECTS)
+## compilation of all userland programs
+USERLAND = $(CAT) $(NEWFILE)
+USERLAND_OBJS = $(CAT_OBJS) $(NEWFILE_OBJS)
+
+
+## assembly and linking
+all: $(KERNEL) $(STDLIB) $(USERLAND)
+
+$(STDLIB): $(STDLIB_OBJS)
+	$(AR) $(ARFLAGS) $(STDLIB) $(STDLIB_OBJS)
+
+$(KERNEL):  $(KERNEL_OBJS) $(STDLIB)
+	$(LD) $(LDFLAGS) -o $(KERNEL) $(KERNEL_OBJS) $(STDLIB)
+
+$(CAT):  $(STDLIB) $(CAT_OBJS)
+	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB) src/mem.o
+
+$(NEWFILE):  $(STDLIB) $(NEWFILE_OBJS)
+	$(LD) -o $(NEWFILE) $(NEWFILE_OBJS) $(STDLIB)
+
+$(READELF):  $(STDLIB) $(READELF_OBJS)
+	$(LD) -o $(READELF) $(READELF_OBJS) $(STDLIB)
 
 clean: 
-	rm -f $(OBJECTS)
-	rm -f $(TARGET)
+	rm -f $(KERNEL_OBJS) $(STDLIB_OBJS) $(USERLAND_OBJS)
+	rm -f $(KERNEL) $(STDLIB) $(USERLAND)
 
 ####### Compile
 
@@ -64,6 +102,16 @@ mem.o: src/mem.s $(HEADERS)
 linuxsys.o: src/linuxsys.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ src/linuxsys.s
 
+## userland
+cat.o: userland/cat.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ userland/cat.s
+
+newfile.o: userland/newfile.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ userland/newfile.s
+
+readelf.o: userland/readelf.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ userland/readelf.s
+
 ####### Install
 
 install:   FORCE
@@ -71,10 +119,11 @@ uninstall:   FORCE
 FORCE:
 run:	linux-run
 
-linux-run:	$(TARGET)
+linux-run:	$(KERNEL)
 	@echo running in linux usermode. See that write branches to write_linux
-	@qemu-aarch64 -L / $(TARGET)
+	$(QEMU_AARCH64) -L / $(KERNEL)
 
-system-run:	$(TARGET)
+system-run:	$(KERNEL)
 	@echo running in full system emulation mode. See that write branches to puts
-	qemu-system-aarch64 -machine virt -cpu cortex-a57 -nographic -smp 1 -m 2 -kernel armv8bin  --append "console=ttyAMA0"
+	$(QEMU_SYSTEM_AARCH64) -machine virt -cpu cortex-a57 -nographic -smp 1 -m 2 -kernel $(KERNEL) --append "console=ttyAMA0"
+
