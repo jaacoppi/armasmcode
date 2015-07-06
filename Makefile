@@ -42,7 +42,8 @@ STDLIB = stdlib.a
 STDLIB_OBJS	= src/stdio.o \
 		src/string.o \
 		src/stdlib.o \
-		src/linuxsys.o
+		src/freebsdsys.o
+#		src/linuxsys.o
 
 ### Linux userland programs
 CAT = cat
@@ -99,8 +100,11 @@ stdlib.o: src/stdlib.s $(HEADERS)
 mem.o: src/mem.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ src/mem.s
 
-linuxsys.o: src/linuxsys.s $(HEADERS)
-	$(AS) $(ASFLAGS) -o @ src/linuxsys.s
+#linuxsys.o: src/linuxsys.s $(HEADERS)
+#	$(AS) $(ASFLAGS) -o @ src/linuxsys.s
+
+freebsd.o: src/freebsd.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ src/freebsdsys.s
 
 ## userland
 cat.o: userland/cat.s $(HEADERS)
@@ -119,8 +123,8 @@ uninstall:   FORCE
 FORCE:
 run:	linux-run
 
-linux-run:	$(KERNEL)
-	@echo running in linux usermode. See that write branches to write_linux
+freebsd-run:	$(KERNEL)
+	@echo running in freebsd usermode. See that write branches to write_linux
 	$(QEMU_AARCH64) -L / $(KERNEL)
 
 system-run:	$(KERNEL)
