@@ -12,6 +12,9 @@
 .global putc
 .global puts
 .global fopen
+.global fclose
+.global fread
+
 .equiv DISPLAY_BASE, 	0x09000000 // Qemu VIRTIO UART - in qemu sources /hw/arm/virt.c
 
 .text
@@ -24,7 +27,7 @@ when in qemu-system-aarch64 full system emulation, branch to puts
 =============================================================================*/
 	m_pushlink
 //	bl puts
-	bl write_linux
+	bl write_syscall
 	m_poplink
 	ret
 
@@ -33,14 +36,40 @@ fopen:
 a stub to call linux syscall fopen
 NOTE: posix wants x1 to be a string (r,w and so on). We use ACCESSMODE
 register conventions:
-	x0, (input) start address of a string to path
+	x0, (input) start address of a string to path, (output) file descriptor
 	x1 (input) ACCESSMODE
+	x2 (input) accessmode permissions flags if it's O_CREATE
 =============================================================================*/
 	m_pushlink
-	bl open_linux
+	bl open_syscall
 	m_poplink
 	ret
 
+
+fclose:
+/*=============================================================================
+a stub to call linux syscall fclose
+register conventions:
+	x0 (input) file descriptor
+=============================================================================*/
+	m_pushlink
+	bl close_syscall
+	m_poplink
+	ret
+
+fread:
+/*=============================================================================
+a stub to call linux syscall fread
+register conventions:
+	x0 (input) pointer to free memory (output) number of bytes read
+	x1 (input) size in bytes
+	x2 (input) number of elements
+	x3 (input) file descriptor
+=============================================================================*/
+	m_pushlink
+	bl read_syscall
+	m_poplink
+	ret
 putc:
 /*=============================================================================
 print a character to the display device set by =DISPLAY_BASE
