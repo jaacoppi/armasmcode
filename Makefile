@@ -5,10 +5,16 @@
 
 ####### Compiler, tools and options
 
+## TARGET is either USER or SYS, default to USER
+TARGET=USER
+## HOST is either FREEBSD or LINUX, default to FREEBSD
+HOST=FREEBSD
+#if TARGET is sys, syscalls are not used and HOST is meaningless
+# see make help for details
 # for freebsd
 AS	= aarch64-freebsd-as
-# for some reasons, freebsd can't handle ASFLAGS
-AS	+= -mverbose-error -I include
+# for some reasons, freebsd Makefile can't handle ASFLAGS
+AS	+= -mverbose-error -I include --defsym $(TARGET)=1 --defsym $(HOST)=1
 LD	= aarch64-freebsd-ld
 
 # for linux
@@ -25,6 +31,7 @@ ARFLAGS = -rcs
 ####### for Qemu
 QEMU_SYSTEM_AARCH64	= qemu-system-aarch64
 QEMU_AARCH64		= qemu-aarch64-static ## for freebsd
+
 ####### Files
 
 HEADERS 	= include/macros.s \
@@ -42,10 +49,9 @@ STDLIB = stdlib.a
 STDLIB_OBJS	= src/stdio.o \
 		src/string.o \
 		src/stdlib.o \
-		src/freebsdsys.o
-#		src/linuxsys.o
+		src/usermodesys.o
 
-### Linux userland programs
+### userland programs
 CAT = cat
 CAT_OBJS	= userland/cat.o
 NEWFILE = newfile
@@ -59,7 +65,7 @@ USERLAND_OBJS = $(CAT_OBJS) $(NEWFILE_OBJS)
 
 
 ## assembly and linking
-all: $(KERNEL) $(STDLIB) $(USERLAND)
+all: $(STDLIB) $(KERNEL) $(USERLAND)
 
 $(STDLIB): $(STDLIB_OBJS)
 	$(AR) $(ARFLAGS) $(STDLIB) $(STDLIB_OBJS)
@@ -86,7 +92,7 @@ main.o: src/main.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ src/main.s
 
 stdio.o: src/stdio.s $(HEADERS)
-	$(AS) $(ASFLAGS) -o @ src/stdio.s
+	 $(AS) $(ASFLAGS) -o @ src/stdio.s
 
 debug.o: src/debug.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ src/debug.s
@@ -100,11 +106,9 @@ stdlib.o: src/stdlib.s $(HEADERS)
 mem.o: src/mem.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ src/mem.s
 
-#linuxsys.o: src/linuxsys.s $(HEADERS)
-#	$(AS) $(ASFLAGS) -o @ src/linuxsys.s
 
-freebsd.o: src/freebsd.s $(HEADERS)
-	$(AS) $(ASFLAGS) -o @ src/freebsdsys.s
+usermodesys.o: src/usermodesys.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ src/usermodesys.s
 
 ## userland
 cat.o: userland/cat.s $(HEADERS)
@@ -121,9 +125,9 @@ readelf.o: userland/readelf.s $(HEADERS)
 install:   FORCE
 uninstall:   FORCE
 FORCE:
-run:	linux-run
+run:	user-run
 
-freebsd-run:	$(KERNEL)
+user-run:	$(KERNEL)
 	@echo running in freebsd usermode. See that write branches to write_linux
 	$(QEMU_AARCH64) -L / $(KERNEL)
 
@@ -131,3 +135,12 @@ system-run:	$(KERNEL)
 	@echo running in full system emulation mode. See that write branches to puts
 	$(QEMU_SYSTEM_AARCH64) -machine virt -cpu cortex-a57 -nographic -smp 1 -m 2 -kernel $(KERNEL) --append "console=ttyAMA0"
 
+help:
+	@echo "possible configurations:
+	@echo targets:
+	@echo make TARGET=USER HOST=FREEBSD => using freebsd syscalls
+	@echo make TARGET=USER HOST=LINUX   => using linux syscalls
+	@echo make TARGET=SYS		    => system emulation mode, no syscalls
+	@echo emulators:
+	@echo make user-run		    => qemu user mode emulation
+	@echo make system-run 		    => qemu full system emulation

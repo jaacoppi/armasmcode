@@ -9,9 +9,26 @@
 // global functions in this file:
 .global itoa
 .global exit
+.global malloc
 .global returnmsg
 .global endmsg
 .text
+
+malloc:
+/*=============================================================================
+stub for calling kernel malloc implementation
+register conventions:
+        x0 = (input) size of memory
+=============================================================================*/
+	b exit_syscall
+
+free:
+/*=============================================================================
+stub for calling kernel free implementation
+register conventions:
+        x0 = (input) pointer to memory
+=============================================================================*/
+	b exit_syscall
 
 exit:
 /*=============================================================================
@@ -20,7 +37,7 @@ TODO: implement your own
 register conventions:
         x0 = (input) return code
 =============================================================================*/
-	b exit_linux
+	b exit_syscall
 
 itoa:
 /*=============================================================================

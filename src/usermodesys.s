@@ -1,46 +1,44 @@
 // aarch64 (ARM 64bit) assembly code for GNU as assembler
 //
-// file: linuxsys.s
-// Contains linux system calls
-
-// The list of linux system calls can be found in the kernel sources at
-// include/uapi/asm-generic/unistd.h. These are based on linux 4.1
+// file: usermodesys.s
+// Contains system calls for boty freebsd and linux hosts
+// see include/syscalls.s and Makefile for targets
 
 .include "macros.s"
 .include "globals.s"
 .include "fcntl.s"
+.include "syscalls.s"
 
 .align word_s	// all instructions 8-byte (64bit) aligned
 // global functions in this file:
-.global exit_linux
-.global write_linux
-.global open_linux
-.global close_linux
-.global read_linux
+.global exit_syscall
+.global write_syscall
+.global open_syscall
+.global close_syscall
+.global read_syscall
 
-exit_linux:
+exit_syscall:
 /*=============================================================================
-linux (arm) system call #93 - exit
 We don't return from here for obvious reasons
 register conventions:
         x0 = (input) return code
 	x28 = temp for storing return code
 =============================================================================*/
-	mov x27, x0
+	mov x28, x0
 	m_prints newline
 	m_prints endmsg
 	m_prints returnmsg
 	mov x0, x27
 	m_printregh x0
 	m_prints newline
-	// linux syscalls work like this:
-	mov x0, x27
-	mov x8, #93
+	// freebsd syscalls work like this:
+	mov x0, x28
+	mov x8, sys_exit
 	svc #0
 
-write_linux:
+write_syscall:
 /*=============================================================================
-given a string, calculate strlen and use linux arm write syscall #64 for output
+given a string, calculate strlen and use freebsd arm write syscall #4 for output
 register conventions:
 	x0 (input) start address of string, (output) number of bytes written)
 	during syscall:
@@ -57,60 +55,59 @@ register conventions:
 	add x2, x2, #1	// x2 = strlen + \n
 	ldr x1, [sp], #stack_align // return starting address of string
 	mov x0, #0	// x0 = standard output
-	mov x8, #64
+	mov x8, sys_write
 	svc #0
 	m_poplink
 	ret
 
-open_linux:
+open_syscall:
 /*=============================================================================
-linux system call #1024 - open
+freebsd system call #5 - open
 register conventions:
         x0, (input) start address of a string to path, (output) file descriptor
         x1 (input) access mode
 	x2 (input) chmod permissions when using O_CREAT
 =============================================================================*/
-// linux access mode definitions can be found from include/uapi/asm-generic/fcntl.h
+// freebsd access mode definitions can be found from include/uapi/asm-generic/fcntl.h
 // and so on. Ours are in include/fcntl.s
-	mov x8, #1024
+	mov x8, sys_open
 	svc #0
         ret
 
-close_linux:
+close_syscall:
 /*=============================================================================
-linux system call #???? - close
+freebsd system call #6 - close
 register conventions:
         x0, (input) file descriptor
 =============================================================================*/
-// linux access mode definitions can be found from include/uapi/asm-generic/fcntl.h
+// freebsd access mode definitions can be found from include/uapi/asm-generic/fcntl.h
 // and so on. Ours are in include/fcntl.s
-	mov x8, #123 // #???
+	mov x8, sys_close
 	svc #0
         ret
 
-read_linux:
+read_syscall:
 /*=============================================================================
-linux system call #???? - read
-a stub to call linux syscall fread
+freebsd system call #3 - read
+a stub to call freebsd syscall fread
 register conventions:
         x0 (input) pointer to free memory
         x1 (input) size in bytes
         x2 (input) number of elements
         x3 (input) file descriptor
-linux read format is:
+freebsd read format is:
 	x0 file descriptor
 	x1 pointer to buffer
 	x2 size in bytes
-return value from linux is:
+return value from freebsd is:
 	0 if size = 0 or end of file reached
 	nonzero means number of bytes read
-	
 =============================================================================*/
-	// setup linux read format
+	// setup freebsd read format
 	mul x2, x1, x2
 	mov x1, x0
 	mov x0, x3
-	mov x8, #123 // #???
+	mov x8, sys_read
 	svc #0
         ret
 

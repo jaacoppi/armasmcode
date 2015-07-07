@@ -26,8 +26,13 @@ when in linux user mode, branch to write_linux
 when in qemu-system-aarch64 full system emulation, branch to puts
 =============================================================================*/
 	m_pushlink
-//	bl puts
+// SYS and USER are defined at compile time in the Makefile. TARGET=SYS or TARGET=USER
+.ifdef	SYS
+	bl puts
+.endif
+.ifdef	USER
 	bl write_syscall
+.endif
 	m_poplink
 	ret
 
