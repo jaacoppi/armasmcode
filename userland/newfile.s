@@ -18,10 +18,9 @@
 _start:
 	// open a file by creating it
 	m_prints copyright
-	m_prints newline
 	ldr x0, =filepath
-	ldr x1, O_CREAT
-	mov x2, #400
+	mov x1, O_CREAT
+	mov x2, #0700	// u+rwx
 	bl fopen
 	cmp x0, #-1
 		bne success
