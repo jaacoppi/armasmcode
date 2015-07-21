@@ -7,12 +7,38 @@
 .include "globals.s"
 .align word_s
 // global functions in this file:
+.global memcpy
 .global strlen
 .global strcmp
 .global strncmp
 .global strcpy
 .global strncpy
 .text
+
+mempy:
+/*=============================================================================
+copy n amount of bytes from one address to another
+NOTE that the caller is responsible for not overlapping these memory areas
+register conventions:
+	x0 (input) start address of dst, (output) start address of dst
+	x1 (input) start address of src
+	x2 (input) amout of bytes to copy
+	x9 = temp
+=============================================================================*/
+	memcpy_loop:
+		// loop with x2 until you've copied enough chars
+		cmp x2, #0
+		beq memcpy_end
+		// get a byte from src and increment it
+		ldrb w9, [x1],1
+		// copy the byte to dst and increment it
+		strb w9, [x0], 1 
+
+		// iterate and loop
+		sub x2, x2, #1 
+		b memcpy_loop
+	memcpy_end:
+		ret
 
 strlen:
 /*=============================================================================
