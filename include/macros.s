@@ -3,18 +3,26 @@
 // file: macros.s
 // Basic macros for speeding up development
 
-.align 8	// all instructions 8-byte (64bit) aligned
+.include "globals.s"
+.align stack_align	// all instructions 8-byte (64bit) aligned
 
 .ifndef MACROS	// only include once
 .equiv MACROS, 1
 
+.macro m_push reg
+	str \reg, [sp, #-stack_align]!
+.endm
+
+.macro m_pop reg
+	ldr \reg, [sp], #stack_align
+.endm
 // since it's difficult to remember that x30 is the link pointer
 // used for returning from subroutine calls
 .macro m_pushlink
-	str x30, [sp, #-8]!
+	str x30, [sp, #-stack_align]!
 .endm
 .macro m_poplink
-	ldr x30, [sp], #8
+	ldr x30, [sp], #stack_align
 .endm
 
 
@@ -55,6 +63,18 @@
 .endm
 
 // print any register (x0-x30) as hex
+
+.macro m_printregi reg
+	m_pushlink
+	mov x0, \reg
+	ldr x1, =tmpstr
+	mov x2, #10
+	bl itoa
+	ldr x0, =tmpstr
+	bl write
+	m_poplink
+.endm
+
 .macro m_printregh reg
 	m_pushlink
 	// push the register we're printing so m_prints hex1 doesn't overwrite it
