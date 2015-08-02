@@ -42,7 +42,8 @@ HEADERS 	= include/macros.s \
 KERNEL = armv8bin
 KERNEL_OBJS	= src/main.o \
 		src/debug.o \
-		src/mem.o
+		src/mem.o \
+		src/except.o \
 
 ### STDLIB
 STDLIB = stdlib.a
@@ -57,7 +58,7 @@ CAT_OBJS	= userland/cat.o
 NEWFILE = newfile
 NEWFILE_OBJS = userland/newfile.o
 READELF = readelf
-READELF_OBJS = userland/readelf.o
+READELF_OBJS = userland/readelf.o userland/elf.o
 
 ## compilation of all userland programs
 USERLAND = $(CAT) $(NEWFILE)
@@ -74,7 +75,7 @@ $(KERNEL):  $(KERNEL_OBJS) $(STDLIB)
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(KERNEL_OBJS) $(STDLIB)
 
 $(CAT):  $(STDLIB) $(CAT_OBJS)
-	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB) src/mem.o
+	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB)
 
 $(NEWFILE):  $(STDLIB) $(NEWFILE_OBJS)
 	$(LD) -o $(NEWFILE) $(NEWFILE_OBJS) $(STDLIB)
@@ -90,6 +91,9 @@ clean:
 
 main.o: src/main.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ src/main.s
+
+except.o: src/except.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ src/except.s
 
 stdio.o: src/stdio.s $(HEADERS)
 	 $(AS) $(ASFLAGS) -o @ src/stdio.s
@@ -132,8 +136,8 @@ user-run:	$(KERNEL)
 	$(QEMU_AARCH64) -L / $(KERNEL)
 
 system-run:	$(KERNEL)
-	@echo running in full system emulation mode. See that write branches to puts
-	$(QEMU_SYSTEM_AARCH64) -machine virt -cpu cortex-a57 -nographic -smp 1 -m 2 -kernel $(KERNEL) --append "console=ttyAMA0"
+	@echo running in full system emulation mode. See that you make TARGET=SYS
+	$(QEMU_SYSTEM_AARCH64) -machine virt -cpu cortex-a57 -nographic -smp 1 -m 512M -kernel $(KERNEL) --append "console=ttyAMA0"
 
 help:
 	@echo "possible configurations:
