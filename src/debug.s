@@ -178,8 +178,6 @@ register conventions:
 .data
 regdumpstr: .asciz "Register dump:\n"
 stracestr: .asciz "Stack trace (FILO):\n"
-colonspace: .asciz ": "
-tab: .asciz " \t"	// wide enough. It seems \t wouldn't cut it
 
 // for debug: try out stack trace & memdump
 /*

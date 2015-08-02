@@ -53,8 +53,6 @@ error:
 	b exit
 
 .data
-copyright: .asciz "Copyright 2015 Juho Hiltunen (jaacoppi)\n"
-newline: .asciz "\n"
 filecreated: .asciz "Created file: "
 filepath: .asciz "filetest"
 errorstr: .asciz "Error while creating file: "

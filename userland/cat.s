@@ -76,8 +76,6 @@ error:
 	b exit
 
 .data
-copyright: .asciz "Copyright 2015 Juho Hiltunen (jaacoppi)\n"
-newline: .asciz "\n"
 fileopened: .asciz "Opened file: "
 readingfile: .asciz "File contents are:\n"
 filepath: .asciz "filetest"

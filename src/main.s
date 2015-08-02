@@ -16,6 +16,7 @@
 .text
 _start:
 	bl stack_init
+	m_prints copyright
 	bl stack_msg
 	bl kheap_init
 
@@ -28,18 +29,13 @@ _start:
 	bl freemem
 
 
-// try opening a file
-	ldr x0, =filepath
-	ldr x1, O_CREAT
-	mov x2, #400
-	bl fopen
 
 //	mov x0, #0
 	bl exit
+
 // this is here just in case
 halt:
 	b halt
-
 
 // set up stack
 stack_init:
@@ -63,14 +59,8 @@ stack_msg:
 	ret
 
 .data
-copyright: .asciz "Copyright 2015 Juho Hiltunen (jaacoppi)\n"
-// if we don't want to use strlen, we can get const string length like this:
-// copyright_len = . - copyright // copyright_len is chars (bytes) between here and copyright:
-newline: .asciz "\n"
 stackaddrmsg: .asciz "Stack address: "
 stacksizemsg: .asciz "Stack size: "
-
-filepath: .asciz "filetest"
 
 // reserve stacksize bytes for the stack starting from stack_base
 // TODO: use a linker script to store this in a known address
