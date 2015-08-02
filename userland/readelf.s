@@ -117,7 +117,6 @@ error:
 
 .data
 filepath: .asciz "readelf"
-space: .asciz " "
 magicstr: .asciz "ELF Magic:\t\t"
 classstr: .asciz "Header format:\t\t"
 littlestr: .asciz "Header endianness:\tLittle endian"
