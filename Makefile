@@ -53,26 +53,28 @@ STDLIB_OBJS	= src/stdio.o \
 		src/usermodesys.o
 
 ### userland programs
-CAT = cat
+CAT 		= cat
 CAT_OBJS	= userland/cat.o
-NEWFILE = newfile
-NEWFILE_OBJS = userland/newfile.o
-READELF = readelf
-READELF_OBJS = userland/readelf.o userland/elf.o
+NEWFILE 	= newfile
+NEWFILE_OBJS 	= userland/newfile.o
+READELF 	= readelf
+READELF_OBJS 	= userland/readelf.o userland/elf.o
 
 ## compilation of all userland programs
-USERLAND = $(CAT) $(NEWFILE)
-USERLAND_OBJS = $(CAT_OBJS) $(NEWFILE_OBJS)
+USERLAND_PROGS = $(CAT) $(NEWFILE) $(READELF)
+USERLAND_OBJS = $(CAT_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
 
 
 ## assembly and linking
-all: $(STDLIB) $(KERNEL) $(USERLAND)
+all: $(STDLIB) $(KERNEL) $(USERLAND_PROGS)
 
 $(STDLIB): $(STDLIB_OBJS)
 	$(AR) $(ARFLAGS) $(STDLIB) $(STDLIB_OBJS)
 
 $(KERNEL):  $(KERNEL_OBJS) $(STDLIB)
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(KERNEL_OBJS) $(STDLIB)
+
+userprogs: $(USERLAND_PROGS)
 
 $(CAT):  $(STDLIB) $(CAT_OBJS)
 	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB)
@@ -85,7 +87,7 @@ $(READELF):  $(STDLIB) $(READELF_OBJS)
 
 clean: 
 	rm -f $(KERNEL_OBJS) $(STDLIB_OBJS) $(USERLAND_OBJS)
-	rm -f $(KERNEL) $(STDLIB) $(USERLAND)
+	rm -f $(KERNEL) $(STDLIB) $(USERLAND_PROGS)
 
 ####### Compile
 
@@ -124,6 +126,9 @@ newfile.o: userland/newfile.s $(HEADERS)
 readelf.o: userland/readelf.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ userland/readelf.s
 
+elf.o: userland/elf.s $(HEADERS) userland/elf.o
+	$(AS) $(ASFLAGS) -o @ userland/elf.s
+
 ####### Install
 
 install:   FORCE
@@ -140,11 +145,16 @@ system-run:	$(KERNEL)
 	$(QEMU_SYSTEM_AARCH64) -machine virt -cpu cortex-a57 -nographic -smp 1 -m 512M -kernel $(KERNEL) --append "console=ttyAMA0"
 
 help:
-	@echo "possible configurations:
-	@echo targets:
-	@echo make TARGET=USER HOST=FREEBSD => using freebsd syscalls
-	@echo make TARGET=USER HOST=LINUX   => using linux syscalls
-	@echo make TARGET=SYS		    => system emulation mode, no syscalls
-	@echo emulators:
-	@echo make user-run		    => qemu user mode emulation
-	@echo make system-run 		    => qemu full system emulation
+	@echo "possible configurations:"
+	@echo "what to make:"
+	@echo "make 				=> make all"
+	@echo "make $(KERNEL)			=> just kernel"
+	@echo "make $(STDLIB)			=> just stdlib"
+	@echo "make userprogs			=> just userland programs"
+	@echo "how to make:"
+	@echo "make TARGET=USER HOST=FREEBSD 	=> using freebsd syscalls"
+	@echo "make TARGET=USER HOST=LINUX   	=> using linux syscalls"
+	@echo "make TARGET=SYS			=> system emulation mode, no syscalls"
+	@echo "how to run:"
+	@echo "make user-run		    	=> qemu user mode emulation"
+	@echo "make system-run		    	=> qemu full system emulation"
