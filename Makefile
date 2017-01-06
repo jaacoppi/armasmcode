@@ -63,18 +63,18 @@ all: $(STDLIB) $(KERNEL) $(USERLAND_PROGS)
 $(STDLIB): $(STDLIB_OBJS) $(HEADERS)
 	$(AR) $(ARFLAGS) $(STDLIB) $(STDLIB_OBJS)
 
-$(KERNEL):  $(KERNEL_OBJS) $(STDLIB)
+$(KERNEL):  $(KERNEL_OBJS) $(STDLIB) $(HEADERS)
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(KERNEL_OBJS) $(STDLIB)
 
 userprogs: $(USERLAND_PROGS)
 
-$(CAT):  $(STDLIB) $(CAT_OBJS)
+$(CAT):  $(STDLIB) $(CAT_OBJS) $(HEADERS)
 	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB)
 
-$(NEWFILE):  $(STDLIB) $(NEWFILE_OBJS)
+$(NEWFILE):  $(STDLIB) $(NEWFILE_OBJS) $(HEADERS)
 	$(LD) -o $(NEWFILE) $(NEWFILE_OBJS) $(STDLIB)
 
-$(READELF):  $(STDLIB) $(READELF_OBJS)
+$(READELF):  $(STDLIB) $(READELF_OBJS) $(HEADERS)
 	$(LD) -o $(READELF) $(READELF_OBJS) $(STDLIB)
 
 clean: 
@@ -83,7 +83,7 @@ clean:
 
 ####### Compile
 
-main.o: src/main.s $(HEADERS)
+main.o: src/main.s
 	$(AS) $(ASFLAGS) -o @ src/main.s
 
 except.o: src/except.s $(HEADERS)
