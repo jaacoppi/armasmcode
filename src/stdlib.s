@@ -39,9 +39,11 @@ register conventions:
 =============================================================================*/
 	b exit_syscall
 
+
 itoa:
 /*=============================================================================
-convert int in base 10 to a string of base 10 or 16
+note that this is a nonstandard C function
+convert int in base 10 to a null terminated string string of base 10 or 16
 register conventions:
 	x0 (input) int, (output) return #0
  	x1 (input & output) address to string start
@@ -94,14 +96,6 @@ register conventions:
 	// x1 still stores the pointer to string start address
 	ret
 
-// for debug and testing
-/*
-	// use itoa to get a new string and write again
-	mov x0, #456
-	ldr x1, =copyright
-	bl itoa
-	m_prints copyright
-*/
 
 .data
 endmsg: .asciz "Thank you for using this software!\n"

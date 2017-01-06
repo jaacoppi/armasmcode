@@ -44,7 +44,7 @@ b _start
 
 except_undefined:
 	m_pushlink
-	m_prints undefinedstr
+	m_fputs undefinedstr
 	m_poplink
 	ret
 
@@ -52,7 +52,7 @@ except_undefined:
 // see Sloss et al, 11.2., p. 391 for a reference implementation
 except_swi:
 	m_pushlink
-	m_prints swistr
+	m_fputs swistr
 	m_poplink
 	ret
 

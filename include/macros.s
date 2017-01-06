@@ -28,12 +28,10 @@
 
 // print macros
 
-// print a string "string"
-.macro m_prints string
-	m_pushlink
+// call fputs
+.macro m_fputs string
 	ldr x0, =\string
-	bl write
-	m_poplink
+	bl fputs
 .endm
 
 // print an int. Caveats: tmpstr length
@@ -44,21 +42,21 @@
 	mov x2, #10
 	bl itoa
 	ldr x0, =tmpstr
-	bl write
+	bl fputs
 	m_poplink
 .endm
 
-// print int as hex in the format 0xinth
+// print int as hex in the format 0xint. Caveats: tmpstr lengthh
 .macro m_printh int
 	m_pushlink
-	m_prints hex1
+	m_fputs hex1
 	mov x0, #\int
 	ldr x1, =tmpstr
 	mov x2, #16
 	bl itoa
 	ldr x0, =tmpstr
-	bl write
-	m_prints hex2
+	bl fputs
+	m_fputs hex2
 	m_pushlink
 .endm
 
@@ -71,23 +69,24 @@
 	mov x2, #10
 	bl itoa
 	ldr x0, =tmpstr
-	bl write
+	bl fputs
 	m_poplink
 .endm
 
 .macro m_printregh reg
 	m_pushlink
-	// push the register we're printing so m_prints hex1 doesn't overwrite it
+	// push the register we're printing so m_fputs hex1 doesn't overwrite it
 	str \reg, [sp, #-8]!
-	m_prints hex1
+	m_fputs hex1
 	ldr \reg, [sp], #8
+
 	mov x0, \reg
 	ldr x1, =tmpstr
 	mov x2, #16
 	bl itoa
 	ldr x0, =tmpstr
-	bl write
-	m_prints hex2
+	bl fputs
+	m_fputs hex2
 	m_poplink
 .endm
 

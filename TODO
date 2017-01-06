@@ -1,0 +1,10 @@
+== Makefile ==
+make Makefile track headers
+http://stackoverflow.com/questions/2394609/makefile-header-dependencies#2394651
+
+== Memory handling ==
+dynamic memory handling, starting with removing static tmpstr 
+
+== System emulation ==
+Make it work.
+A proper toolchain, maybe binutils-arm-none-eabi or one with aarch64

@@ -16,7 +16,7 @@
 .text
 _start:
 	bl stack_init
-	m_prints copyright
+	m_fputs copyright
 	bl stack_msg
 	bl kheap_init
 
@@ -47,15 +47,15 @@ stack_init:
 // we want to print this after the copyright notice so it's not in stack_init
 // print out stack location and size
 stack_msg:
-	m_prints stackaddrmsg
+	m_fputs stackaddrmsg
 	// m_printregh only accepts x registers, not sp
 	mov x0, sp
 	m_printregh x0
-	m_prints newline
-	m_prints stacksizemsg
+	m_fputs newline
+	m_fputs stacksizemsg
 	mov x0, STACK_SIZE
 	m_printregh x0
-	m_prints newline
+	m_fputs newline
 	ret
 
 .data

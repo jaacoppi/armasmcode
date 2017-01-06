@@ -11,32 +11,31 @@
 .global _start
 .global newline
 
-// x19-x29 are callee saved register. We can safely use them here for:// x19-x29 are callee saved regist$
+// x19-x29 are callee saved register. We can safely use them here for:
 // x19 = file descriptor
 // x20 = pointer to allocated memory
 .text
 _start:
-	m_prints copyright
-	m_prints newline
+	m_fputs copyright
+
 open:
 	ldr x0, =filepath
 	mov x1, O_RDONLY
 	bl fopen
 	cmp x0, #-1
-		beq error_create
 		bne success
+		beq error_open
 success:
 	mov x19, x0
-	m_prints fileopened
-	m_prints filepath
-	m_prints newline
+	m_fputs fileopened
+	m_fputs filepath
+	m_fputs newline
 // since we don't have a usable malloc, use static memory in .bss
 reservemem:
 	ldr x20, =memarea
-
 read:
-	m_prints readingfile
-	mov x0, x20	
+	m_fputs readingfile
+	mov x0, x20
 	mov x1, #64	// read first 64 chars per element
 	mov x2, #1	// read one element
 	mov x3, x19
@@ -44,12 +43,9 @@ read:
 	cmp x0, #0
 	beq error_read
 display:
-//	TODO: a memdump to see if read works
 	// read from the memory address in x20
-	// TODO: check for null termination of string by comparing the last char (x0) +1
 	ldr x0, =memarea
-	bl write
-
+	bl fputs
 // we're done, restore the file pointer and close
 close:
 	mov x0, x19
@@ -61,27 +57,23 @@ close:
 
 // print a proper error string and exit
 error_read:
-	m_prints errorstr3
+	m_fputs err_fileread
 	b error
-error_create:
-	m_prints errorstr
+error_open:
+	m_fputs err_fileopen
 	b error
 error_close:
-	m_prints errorstr2
+	m_fputs err_fileclose
 	b error
 error:
-	m_prints filepath
-	m_prints newline
+	m_fputs filepath
+	m_fputs newline
 	mov x0, #1
 	b exit
 
 .data
 fileopened: .asciz "Opened file: "
-readingfile: .asciz "File contents are:\n"
+readingfile:  .asciz "File contents are:\n"
 filepath: .asciz "filetest"
-errorstr: .asciz "Error while opening file: "
-errorstr2: .asciz "Error while closing file: "
-errorstr3: .asciz "Error while reading file: "
-
 .bss
 memarea:	.space 0x1000

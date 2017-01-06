@@ -55,7 +55,7 @@ register conventions:
 	str x0, [sp, #-stack_align]!
 	// push & pop enough register, then print them one by one
 	// avoiding overwriting registers in subroutines
-	m_prints regdumpstr
+	m_fputs regdumpstr
 	mov x9, #0
 	.equiv REGSPERLINE, 4
 	mov x10, REGSPERLINE
@@ -68,8 +68,8 @@ register conventions:
 		mov x2, #10
 		bl itoa
 		ldr x0, =tmpstr
-		bl write
-		m_prints colonspace
+		bl fwrite
+		m_fputs colonspace
 		// the original register value is 3rd in stack - get it and push rest back
 		// TODO: access sp mem directly without changing index: ldr x0, [sp, #24]?
 		ldr x9, [sp], #stack_align
@@ -84,12 +84,12 @@ register conventions:
 			beq regdump_newline
 				// not equal, print a tab
 				str x10, [sp, #-stack_align]!
-				m_prints tab
+				m_fputs tab
 				ldr x10, [sp], #stack_align
 				sub x10, x10, #1
 				b regdump_tabready
 			regdump_newline:
-				m_prints newline
+				m_fputs newline
 				mov x10, REGSPERLINE
 		regdump_tabready:
 		// see  if we need to loop again
@@ -99,7 +99,7 @@ register conventions:
 			add x9, x9, #1
 			b regdump_loop
 	regdump_finished:
-		m_prints newline
+		m_fputs newline
 		ldr x30, [sp], #stack_align
 	ret
 
@@ -112,14 +112,14 @@ register conventions:
 =============================================================================*/
 	m_pushlink
 	str x0, [sp, #-stack_align]!
-        m_prints hex1
+        m_fputs hex1
 	ldr x0, [sp], #stack_align
         ldr x1, =tmpstr
         mov x2, #16
         bl itoa
         ldr x0, =tmpstr
-        bl write
-        m_prints hex2
+        bl fwrite
+        m_fputs hex2
 	m_poplink
 	ret
 
@@ -132,7 +132,7 @@ register conventions:
 	x1 
 top of stack
 =============================================================================*/
-	m_prints stracestr
+	m_fputs stracestr
   	mov x0, sp      
 	ldr x1, =STACK_TOP
         m_pushlink // don't show return address of this subroutine in strace
@@ -164,12 +164,12 @@ register conventions:
 	// print address
 	str x0, [sp, #-stack_align]!
 	m_printregh x0
-	m_prints colonspace
+	m_fputs colonspace
 	// print value
 	ldr x0, [sp], #stack_align
 	ldr x0, [x0]
 	m_printregh x0
-	m_prints newline
+	m_fputs newline
 	ldr x1, [sp], #stack_align
 	ldr x0, [sp], #stack_align
 	m_poplink

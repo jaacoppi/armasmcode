@@ -18,12 +18,17 @@
 
 // some global strings used all around the project
 .data
-copyright: .asciz "Copyright 2015 Juho Hiltunen (jaacoppi)\n"
+copyright: .asciz "Copyright 2016 Juho Hiltunen (jaacoppi)\n"
 // if we don't want to use strlen, we can get const string length like this:
-// copyright_len = . - copyright // copyright_len is chars (bytes) between here and copyright:
+copyright_len = . - copyright // copyright_len is chars (bytes) between here and copyright:
 newline: .asciz "\n"
 space: .asciz " "
 colonspace: .asciz ": "
 tab: .asciz " \t"       // wide enough. It seems \t wouldn't cut it
 
+// this could be errno.s, errors. or something else..
+err_fileopen: .asciz "Error while opening file: "
+err_fileclose: .asciz "Error while closing file: "
+err_fileread: .asciz "Error while reading file: "
+err_filecreate: .asciz "Error while creating file: "
 .endif

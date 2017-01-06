@@ -196,6 +196,6 @@ register conventions:
 	mov x2, #3
 	bl strncpy
 	ldr x0, =copyright
-	bl write
+	bl fwrite
 */
 

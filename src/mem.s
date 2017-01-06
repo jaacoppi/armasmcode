@@ -59,29 +59,29 @@ register conventions:
 =============================================================================*/
 	m_pushlink
 	// print heap top
-	m_prints kheaptopstr
+	m_fputs kheaptopstr
 	ldr x1, =heap_unalignedtop
 	and x1, x1, 0xFFFFFFFFFFFFF000
 	ldr x0, =heap_topptr
 	str x1, [x0]
 	ldr x0, [x0]
 	m_printregh x0
-	m_prints newline
+	m_fputs newline
 
 	// align pointer and print heap base address
-	m_prints kheapbottomstr
+	m_fputs kheapbottomstr
 	ldr x1, =heap_unalignedbase
 	and x1, x1, 0xFFFFFFFFFFFFF000
 	ldr x0, =heap_bottomptr
 	str x1, [x0]
 	ldr x0, [x0]
 	m_printregh x0
-	m_prints newline
+	m_fputs newline
 
-	m_prints kheapliststr
+	m_fputs kheapliststr
 	ldr x0, =heap_list_start
 	m_printregh x0
-	m_prints newline
+	m_fputs newline
 
 	// initialize the linked list of free memory areas
 	// every list item should point to the next list item
@@ -223,7 +223,7 @@ register conventions:
 	bl mm_freelist_getallocaddr
 	// for debug
 	str x0, [sp, #-stack_align]!
-	m_prints debugmalloc
+	m_fputs debugmalloc
 	ldr x0, [sp], #stack_align
 	bl memdump
 	// end debug
@@ -256,7 +256,7 @@ register conventions:
 	mov x0, x9
 	bl mm_freelist_getallocaddr
 	str x0, [sp, #-stack_align]!
-	m_prints debugfree
+	m_fputs debugfree
 	ldr x0, [sp], #stack_align
 	bl memdump
 	// end debug
@@ -270,7 +270,7 @@ Print out currently available memory
 register conventions:
 =============================================================================*/
 	m_pushlink
-	m_prints freememstr
+	m_fputs freememstr
 	mov x0, #0 // iterator
 	ldr x1, =heap_list_start
 	ldr x2, =freelist_empty
@@ -286,7 +286,7 @@ register conventions:
 	mov x1, heap_chunksize
 	mul x0, x0, x1
 	m_printregh x0
-	m_prints newline
+	m_fputs newline
 	m_poplink
 	ret
 

@@ -24,7 +24,7 @@ register conventions:
 	ldrb w1, [x0], 1
 	cmp x1, 0x7F
 	bne invalid_elf
-	
+
 	ldrb w1, [x0], 1
 	cmp x1, 0x45
 	bne invalid_elf

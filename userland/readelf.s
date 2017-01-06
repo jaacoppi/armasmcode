@@ -18,7 +18,7 @@
 
 .text
 _start:
-	m_prints copyright
+	m_fputs copyright
 	// load a file to memory with fopen and fread and memcpy
 	// TODO: maybe start using macros for error checking?
 	// at this point, x0 should containt the mem address
@@ -60,43 +60,46 @@ register conventions:
 	x22 = temp for printing
 =============================================================================*/
 // magic
-	m_prints magicstr
+	m_fputs magicstr
 	ldrb w21, [x20], 1
 	m_printregh x21
-	m_prints space
+	mov x0, #1
+	m_printregh x0
+	m_fputs space
 	ldrb w21, [x20], 1
 	m_printregh x21
-	m_prints space
+	m_fputs space
 	ldrb w21, [x20], 1
 	m_printregh x21
-	m_prints space
+	m_fputs space
 	ldrb w21, [x20], 1
 	m_printregh x21
-	m_prints newline
+	m_fputs newline
 // 32/64 bit - simply multiply 1 or 2 by 32
-	m_prints classstr
+	m_fputs classstr
 	ldrb w21, [x20], 1
 	mov x22, #32
 	mul x21, x21, x22
 	m_printregi x21
-	m_prints newline
+	m_fputs newline
 // endianness
 	ldrb w21, [x20], 1
 	cmp x21, #1
 	beq little_endian
 	bne bigendian
 little_endian:
-	m_prints littlestr
+	m_fputs littlestr
 	b next
 bigendian:
-	m_prints bigstr
+	m_fputs bigstr
 
 next:
-	m_prints newline
+	m_fputs newline
 // version
 	ldrb w21, [x20], 1
-	m_prints versionstr
+	m_fputs versionstr
 	m_printregi x21
+	m_fputs newline
 // TODO: rest
 
 close:
@@ -108,9 +111,9 @@ close:
 
 error_open:
 error:
-	m_prints errorstr
-	m_prints filepath
-//       m_prints newline
+	m_fputs errorstr
+	m_fputs filepath
+//       m_fputs newline
         mov x0, #1
         b exit
 
@@ -123,6 +126,7 @@ littlestr: .asciz "Header endianness:\tLittle endian"
 bigstr: .asciz "Header endianness:\tBig endian"
 versionstr: .asciz "Version:\t\t"
 errorstr: .asciz "An error has occurred reading elf headers for file: "
+
 // the elf header from https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header
 // NOTE: this only supports 64bit format. In 32bit, the offsets after 0x18 are different
 // TODO: instead of reserving 64 bytes, make this dynamic

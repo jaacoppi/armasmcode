@@ -6,21 +6,13 @@
 ####### Compiler, tools and options
 
 ## TARGET is either USER or SYS, default to USER
-TARGET=USER
-## HOST is either FREEBSD or LINUX, default to FREEBSD
-HOST=FREEBSD
-#if TARGET is sys, syscalls are not used and HOST is meaningless
 # see make help for details
-# for freebsd
-AS	= aarch64-freebsd-as
-# for some reasons, freebsd Makefile can't handle ASFLAGS
-AS	+= -mverbose-error -I include --defsym $(TARGET)=1 --defsym $(HOST)=1
-LD	= aarch64-freebsd-ld
+TARGET=USER
 
 # for linux
-#AS	= aarch64-linux-gnu-as
-#ASFLAGS = -mverbose-error -I include
-#LD	= aarch64-linux-gnu-ld
+AS	= aarch64-linux-gnu-as
+ASFLAGS = -mverbose-error -I include --defsym $(TARGET)=1
+LD	= aarch64-linux-gnu-ld
 
 # linker script for kernel
 LDFLAGS = -T src/linker.ld
@@ -30,7 +22,7 @@ ARFLAGS = -rcs
 
 ####### for Qemu
 QEMU_SYSTEM_AARCH64	= qemu-system-aarch64
-QEMU_AARCH64		= qemu-aarch64-static ## for freebsd
+QEMU_AARCH64		= qemu-aarch64
 
 ####### Files
 
@@ -68,7 +60,7 @@ USERLAND_OBJS = $(CAT_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
 ## assembly and linking
 all: $(STDLIB) $(KERNEL) $(USERLAND_PROGS)
 
-$(STDLIB): $(STDLIB_OBJS)
+$(STDLIB): $(STDLIB_OBJS) $(HEADERS)
 	$(AR) $(ARFLAGS) $(STDLIB) $(STDLIB_OBJS)
 
 $(KERNEL):  $(KERNEL_OBJS) $(STDLIB)
@@ -134,11 +126,7 @@ elf.o: userland/elf.s $(HEADERS) userland/elf.o
 install:   FORCE
 uninstall:   FORCE
 FORCE:
-run:	user-run
-
-user-run:	$(KERNEL)
-	@echo running in freebsd usermode. See that write branches to write_linux
-	$(QEMU_AARCH64) -L / $(KERNEL)
+run:	system-run
 
 system-run:	$(KERNEL)
 	@echo running in full system emulation mode. See that you make TARGET=SYS
@@ -152,9 +140,7 @@ help:
 	@echo "make $(STDLIB)			=> just stdlib"
 	@echo "make userprogs			=> just userland programs"
 	@echo "how to make:"
-	@echo "make TARGET=USER HOST=FREEBSD 	=> using freebsd syscalls"
-	@echo "make TARGET=USER HOST=LINUX   	=> using linux syscalls"
+	@echo "make TARGET=USER	(default)   	=> using linux syscalls"
 	@echo "make TARGET=SYS			=> system emulation mode, no syscalls"
 	@echo "how to run:"
-	@echo "make user-run		    	=> qemu user mode emulation"
-	@echo "make system-run		    	=> qemu full system emulation"
+	@echo "make system-run		    	=> run kernel in qemu full system emulation"
