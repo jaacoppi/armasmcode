@@ -90,7 +90,14 @@
 	m_poplink
 .endm
 
-
+.macro m_memset string char count
+	m_pushlink
+	ldr x0, =\string
+	mov x1, \char
+	mov x2, \count
+	bl memset
+	m_poplink
+.endm
 
 .data
 tmpstr: .asciz "0123456789"

@@ -8,6 +8,7 @@
 .align word_s
 // global functions in this file:
 .global memcpy
+.global memset
 .global strlen
 .global strcmp
 .global strncmp
@@ -38,6 +39,27 @@ register conventions:
 		sub x2, x2, #1 
 		b memcpy_loop
 	memcpy_end:
+		ret
+
+memset:
+/*=============================================================================
+fill a memory area with chars
+register conventions:
+	x0 (input & output ) start address of memarea to be written to
+	x1 (input) char to be written
+	x2 (input) amount of chars to write
+=============================================================================*/
+	memset_loop:
+		// loop with x2 until you've copied enough chars
+		cmp x2, #0
+		beq memset_end
+		// copy the byte to dst and increment it
+		strb w1, [x0], 1
+
+		// iterate and loop
+		sub x2, x2, #1
+		b memset_loop
+	memset_end:
 		ret
 
 strlen:
