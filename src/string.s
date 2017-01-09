@@ -16,7 +16,7 @@
 .global strncpy
 .text
 
-mempy:
+memcpy:
 /*=============================================================================
 copy n amount of bytes from one address to another
 NOTE that the caller is responsible for not overlapping these memory areas
