@@ -4,3 +4,7 @@ dynamic memory handling, starting with removing static tmpstr
 == System emulation ==
 Make it work.
 A proper toolchain, maybe binutils-arm-none-eabi or one with aarch64
+
+
+== c library ==
+feof() and ferror from stdio.h for detecting EOF and errors from file operations

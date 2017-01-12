@@ -47,14 +47,16 @@ STDLIB_OBJS	= src/stdio.o \
 ### userland programs
 CAT 		= cat
 CAT_OBJS	= userland/cat.o
+HEXDUMP		= hexdump
+HEXDUMP_OBJS	= userland/hexdump.o
 NEWFILE 	= newfile
 NEWFILE_OBJS 	= userland/newfile.o
 READELF 	= readelf
 READELF_OBJS 	= userland/readelf.o userland/elf.o
 
 ## compilation of all userland programs
-USERLAND_PROGS = $(CAT) $(NEWFILE) $(READELF)
-USERLAND_OBJS = $(CAT_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
+USERLAND_PROGS = $(CAT) $(HEXDUMP) $(NEWFILE) $(READELF)
+USERLAND_OBJS = $(CAT_OBJS) $(HEXDUMP_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
 
 
 ## assembly and linking
@@ -70,6 +72,9 @@ userprogs: $(USERLAND_PROGS)
 
 $(CAT):  $(STDLIB) $(CAT_OBJS) $(HEADERS)
 	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB)
+
+$(HEXDUMP):  $(STDLIB) $(HEXDUMP_OBJS) $(HEADERS)
+	$(LD) -o $(HEXDUMP) $(HEXDUMP_OBJS) $(STDLIB)
 
 $(NEWFILE):  $(STDLIB) $(NEWFILE_OBJS) $(HEADERS)
 	$(LD) -o $(NEWFILE) $(NEWFILE_OBJS) $(STDLIB)
