@@ -18,7 +18,7 @@
 
 // some global strings used all around the project
 .data
-copyright: .asciz "Copyright 2016 Juho Hiltunen (jaacoppi)\n"
+copyright: .asciz "Copyright 2016-2017 Juho Hiltunen (jaacoppi)\n"
 // if we don't want to use strlen, we can get const string length like this:
 copyright_len = . - copyright // copyright_len is chars (bytes) between here and copyright:
 newline: .asciz "\n"
