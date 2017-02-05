@@ -100,7 +100,7 @@
 .endm
 
 .data
-tmpstr: .asciz "0123456789"
+tmpstr: .asciz "0123456789ABCDEF"
 hex1: .asciz "0x"
 hex2: .asciz "h"
 .endif
