@@ -66,8 +66,7 @@ display:
 		cmp x22, #0	// quit loop if there's a \0
 		beq donehexloop
 		// convert the hex value to an ascii string
-		ldr x0, [x22]	// load the value stored in x22
-		and x0, x0, 0x000000FF // mask to only include 2 bytes (one value)
+		ldrb w0, [x22]	// load the value stored in x22
 		// add a leading 0 if value is single digit (< 0x10)
 			m_push x0
 			m_push x1
@@ -102,8 +101,7 @@ display:
 		beq doneasciiloop
 
 		// load the char to be compared
-		ldr x0, [x22]
-		and x0, x0, 0x000000FF // mask to only include 2 bytes (one value)
+		ldrb w0, [x22]
 
 		cmp x0, 0x21
 		blt notprintable
