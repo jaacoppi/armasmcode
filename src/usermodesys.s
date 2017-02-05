@@ -16,6 +16,7 @@
 .global open_syscall
 .global close_syscall
 .global read_syscall
+.global lseek_syscall
 
 exit_syscall:
 /*=============================================================================
@@ -96,3 +97,15 @@ return value s:
         ret
 
 
+lseek_syscall:
+/*=============================================================================
+Linux system call lseek
+register conventions:
+        x0 (input) file descriptor
+        x1 (input) offset in bytes
+        x2 (input) whence
+        uses registers x0, x1,x2, x9 since write uses them
+=============================================================================*/
+	mov x8, sys_lseek
+	svc #0
+        ret

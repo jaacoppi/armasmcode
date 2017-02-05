@@ -28,8 +28,8 @@ QEMU_AARCH64		= qemu-aarch64
 
 HEADERS 	= include/macros.s \
 	 	  include/globals.s \
-		  include/fcntl.s
-
+		  include/fcntl.s \
+		  include/fs.s
 ### Kernel
 KERNEL = armv8bin
 KERNEL_OBJS	= src/main.o \

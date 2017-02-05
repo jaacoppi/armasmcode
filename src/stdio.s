@@ -14,6 +14,7 @@
 .global fopen
 .global fclose
 .global fread
+.global fseek
 
 // Use this for qemu-system-aarch64 where we don't have syscalls:
 .equiv DISPLAY_BASE, 	0x09000000  // Qemu VIRTIO UART - in qemu sources /hw/arm/virt.c
@@ -124,6 +125,15 @@ register conventions:
 		ldrb w0, [x1], 1
 		b fputs_loop
 	fputs_nullexit: // null found, exit
+	m_poplink
+	ret
+
+fseek:
+/*=============================================================================
+Wrapper to lseek
+=============================================================================*/
+	m_pushlink
+	bl lseek_syscall
 	m_poplink
 	ret
 
