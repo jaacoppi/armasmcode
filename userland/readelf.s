@@ -63,6 +63,20 @@ register conventions:
 	x21 = temp for printing
 	x22 = temp for printing
 =============================================================================*/
+.macro m_displayfield bytes fieldstr
+	ldrb w21, [x20], \bytes
+	m_fputs \fieldstr
+	m_printregi x21
+	m_fputs newline
+.endm
+
+.macro m_displayfieldh bytes fieldstr
+	ldrb w21, [x20], \bytes
+	m_fputs \fieldstr
+	m_printregh x21
+	m_fputs newline
+.endm
+
 // magic
 	m_fputs magicstr
 
@@ -91,57 +105,43 @@ register conventions:
 	cmp x21, #1
 	beq little_endian
 	bne bigendian
-little_endian:
-	m_fputs littlestr
-	b next
-bigendian:
-	m_fputs bigstr
+	little_endian:
+		m_fputs littlestr
+		b next
+	bigendian:
+		m_fputs bigstr
 
-next:
+	next:
 	m_fputs newline
-
-.macro m_displayfield bytes fieldstr
-	ldrb w21, [x20], \bytes
-	m_fputs \fieldstr
-	m_printregi x21
-	m_fputs newline
-.endm
-
-.macro m_displayfieldh bytes fieldstr
-	ldrb w21, [x20], \bytes
-	m_fputs \fieldstr
-	m_printregh x21
-	m_fputs newline
-.endm
 
 	m_displayfield 1 versionstr
-// Target OS ABI
+	// Target OS ABI
 	m_fputs abistr
 	ldrb w21, [x20], 1
-// switch statement
+	// switch statement
 	adr x0, abistr_array
-.macro m_switch_retabi cmpwhat
-	cmp w21, \cmpwhat
-		beq retabi
-		add x0, x0, #15
-.endm
-	m_switch_retabi 0x0
-	m_switch_retabi 0x1
-	m_switch_retabi 0x2
-	m_switch_retabi 0x3
-	m_switch_retabi 0x6
-	m_switch_retabi 0x7
-	m_switch_retabi 0x8
-	m_switch_retabi 0x9
-	m_switch_retabi 0x0A
-	m_switch_retabi 0x0B
-	m_switch_retabi 0x0C
-	m_switch_retabi 0x0D
-	m_switch_retabi 0x0E
-	m_switch_retabi 0x0F
-	m_switch_retabi 0x10
-	m_switch_retabi 0x11
-	m_switch_retabi 0x53
+	.macro m_switch_retabi cmpwhat
+		cmp w21, \cmpwhat
+			beq retabi
+			add x0, x0, #15
+	.endm
+		m_switch_retabi 0x0
+		m_switch_retabi 0x1
+		m_switch_retabi 0x2
+		m_switch_retabi 0x3
+		m_switch_retabi 0x6
+		m_switch_retabi 0x7
+		m_switch_retabi 0x8
+		m_switch_retabi 0x9
+		m_switch_retabi 0x0A
+		m_switch_retabi 0x0B
+		m_switch_retabi 0x0C
+		m_switch_retabi 0x0D
+		m_switch_retabi 0x0E
+		m_switch_retabi 0x0F
+		m_switch_retabi 0x10
+		m_switch_retabi 0x11
+		m_switch_retabi 0x53
 
 	retabi:
 	bl fputs
@@ -149,7 +149,7 @@ next:
 
 	ldr x21, [x20], 8 // skip e_ident[EI_ABIVERSION] and e_ident[EI_PAD]
 
-// type:
+	// type:
 	m_fputs typestr
 	ldrb w21, [x20], 2
 	// typestr_array has strings of 12 chars. Get offset from the field type
@@ -161,34 +161,34 @@ next:
 	bl fputs
 	m_fputs newline
 
+	// machine type
 	m_fputs machinestr
 	ldrb w21, [x20], 2
-// switch statement
+	// switch statement
 	adr x0, machinestr_array
-.macro m_switch_retmachine cmpwhat
-	cmp w21, \cmpwhat
-		beq retmachine
-		add x0, x0, #8
-.endm
-	m_switch_retmachine 0x0
-	m_switch_retmachine 0x2
-	m_switch_retmachine 0x3
-	m_switch_retmachine 0x8
-	m_switch_retmachine 0x14
-	m_switch_retmachine 0x28
-	m_switch_retmachine 0x2A
-	m_switch_retmachine 0x32
-	m_switch_retmachine 0x3E
-	m_switch_retmachine 0xB7
-	m_switch_retmachine 0xF3
+	.macro m_switch_retmachine cmpwhat
+		cmp w21, \cmpwhat
+			beq retmachine
+			add x0, x0, #8
+	.endm
+		m_switch_retmachine 0x0
+		m_switch_retmachine 0x2
+		m_switch_retmachine 0x3
+		m_switch_retmachine 0x8
+		m_switch_retmachine 0x14
+		m_switch_retmachine 0x28
+		m_switch_retmachine 0x2A
+		m_switch_retmachine 0x32
+		m_switch_retmachine 0x3E
+		m_switch_retmachine 0xB7
+		m_switch_retmachine 0xF3
 	retmachine:
 	bl fputs
 	m_fputs newline
 
-
 	m_displayfield 4 eversionstr
 
-// e_entry, e_phoff and shoff are using ldr (8 bytes) instead of lrdb, don't macro
+	// e_entry, e_phoff and shoff are using ldr (8 bytes) instead of lrdb, don't macro
 	ldr x21, [x20], 8
 	m_fputs entrystr
 	m_printregh x21
@@ -226,6 +226,7 @@ error:
 //       m_fputs newline
         mov x0, #1
         b exit
+
 
 
 .data
@@ -278,7 +279,7 @@ typestr_array: // an array of 12-byte strings:
 	.asciz "Shared\0\0\0\0\0"
 	.asciz "Core\0\0\0\0\0\0\0"
 machinestr: .asciz "Machine:\t\t\t"
-machinestr_array: 
+machinestr_array:
 	.asciz "Unknown"
 	.asciz "SPARC\0\0"
 	.asciz "x86\0\0\0\0"
@@ -326,7 +327,7 @@ El_PAD:	.space 0x7	// unused 7 bytes
 // 0x10, e_type
 e_type: .space 0x2	// 1 = reloc, 2 = exec, 3 = shared, 4 = core
 e_machine: .space 0x2	// 0x03 = x86, 0xB7 = AArch64
-e_version: .space 0x1	// set to 1
+e_version: .space 0x4	// set to 1
 e_entry: .space 0x8	// executable entry point
 e_phoff: .space 0x8	// start of program header table
 e_shoff: .space 0x8	// start of section header table
