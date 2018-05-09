@@ -47,6 +47,8 @@ STDLIB_OBJS	= src/stdio.o \
 ### userland programs
 CAT 		= cat
 CAT_OBJS	= userland/cat.o
+DISARM64	= disarm64
+DISARM64_OBJS	= userland/disarm64.o userland/elf.o userland/decode.o
 HEXDUMP		= hexdump
 HEXDUMP_OBJS	= userland/hexdump.o
 NEWFILE 	= newfile
@@ -55,8 +57,8 @@ READELF 	= readelf
 READELF_OBJS 	= userland/readelf.o userland/elf.o
 
 ## compilation of all userland programs
-USERLAND_PROGS = $(CAT) $(HEXDUMP) $(NEWFILE) $(READELF)
-USERLAND_OBJS = $(CAT_OBJS) $(HEXDUMP_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
+USERLAND_PROGS = $(CAT) $(DISARM64) $(HEXDUMP) $(NEWFILE) $(READELF)
+USERLAND_OBJS = $(CAT_OBJS) $(DISARM64_OBJS) $(HEXDUMP_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
 
 
 ## assembly and linking
@@ -72,6 +74,9 @@ userprogs: $(USERLAND_PROGS)
 
 $(CAT):  $(STDLIB) $(CAT_OBJS) $(HEADERS)
 	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB)
+
+$(DISARM64): $(STDLIB) $(DISARM64_OBJS) $(HEADERS)
+	$(LD) -o $(DISARM64) $(DISARM64_OBJS) $(STDLIB)
 
 $(HEXDUMP):  $(STDLIB) $(HEXDUMP_OBJS) $(HEADERS)
 	$(LD) -o $(HEXDUMP) $(HEXDUMP_OBJS) $(STDLIB)
@@ -116,6 +121,9 @@ usermodesys.o: src/usermodesys.s $(HEADERS)
 ## userland
 cat.o: userland/cat.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ userland/cat.s
+
+disarm64.o: userland/disarm64.s $(HEADERS)
+	$(AS) $(ASFLAGS) -o @ userland/disarm64.s
 
 newfile.o: userland/newfile.s $(HEADERS)
 	$(AS) $(ASFLAGS) -o @ userland/newfile.s
