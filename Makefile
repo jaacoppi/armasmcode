@@ -26,6 +26,9 @@ QEMU_AARCH64		= qemu-aarch64
 
 ####### Files
 
+BINDIR = bin
+LIBDIR = lib
+
 HEADERS 	= include/macros.s \
 	 	  include/globals.s \
 		  include/fcntl.s \
@@ -57,40 +60,44 @@ READELF 	= readelf
 READELF_OBJS 	= userland/readelf.o userland/elf.o
 
 ## compilation of all userland programs
-USERLAND_PROGS = $(CAT) $(DISARM64) $(HEXDUMP) $(NEWFILE) $(READELF)
+USERLAND_PROGS = build_hook $(CAT) $(DISARM64) $(HEXDUMP) $(NEWFILE) $(READELF)
 USERLAND_OBJS = $(CAT_OBJS) $(DISARM64_OBJS) $(HEXDUMP_OBJS) $(NEWFILE_OBJS) $(READELF_OBJS)
 
 
 ## assembly and linking
-all: $(STDLIB) $(KERNEL) $(USERLAND_PROGS)
+all: build_hook $(STDLIB) $(KERNEL) $(USERLAND_PROGS)
+
+build_hook:
+	mkdir -p $(BINDIR) $(LIBDIR)
+
 
 $(STDLIB): $(STDLIB_OBJS) $(HEADERS)
-	$(AR) $(ARFLAGS) $(STDLIB) $(STDLIB_OBJS)
+	$(AR) $(ARFLAGS) $(LIBDIR)/$(STDLIB) $(STDLIB_OBJS)
 
 $(KERNEL):  $(KERNEL_OBJS) $(STDLIB) $(HEADERS)
-	$(LD) $(LDFLAGS) -o $(KERNEL) $(KERNEL_OBJS) $(STDLIB)
+	$(LD) $(LDFLAGS) -o $(BINDIR)/$(KERNEL) $(KERNEL_OBJS) $(LIBDIR)/$(STDLIB)
 
 userprogs: $(USERLAND_PROGS)
 
 $(CAT):  $(STDLIB) $(CAT_OBJS) $(HEADERS)
-	$(LD) -o $(CAT) $(CAT_OBJS) $(STDLIB)
+	$(LD) -o $(BINDIR)/$(CAT) $(CAT_OBJS) $(LIBDIR)/$(STDLIB)
 
 $(DISARM64): $(STDLIB) $(DISARM64_OBJS) $(HEADERS)
-	$(LD) -o $(DISARM64) $(DISARM64_OBJS) $(STDLIB)
+	$(LD) -o $(BINDIR)/$(DISARM64) $(DISARM64_OBJS) $(LIBDIR)/$(STDLIB)
 
 $(HEXDUMP):  $(STDLIB) $(HEXDUMP_OBJS) $(HEADERS)
-	$(LD) -o $(HEXDUMP) $(HEXDUMP_OBJS) $(STDLIB)
+	$(LD) -o $(BINDIR)/$(HEXDUMP) $(HEXDUMP_OBJS) $(LIBDIR)/$(STDLIB)
 
 $(NEWFILE):  $(STDLIB) $(NEWFILE_OBJS) $(HEADERS)
-	$(LD) -o $(NEWFILE) $(NEWFILE_OBJS) $(STDLIB)
+	$(LD) -o $(BINDIR)/$(NEWFILE) $(NEWFILE_OBJS) $(LIBDIR)/$(STDLIB)
 
 $(READELF):  $(STDLIB) $(READELF_OBJS) $(HEADERS)
-	$(LD) -o $(READELF) $(READELF_OBJS) $(STDLIB)
+	$(LD) -o $(BINDIR)/$(READELF) $(READELF_OBJS) $(LIBDIR)/$(STDLIB)
 
 clean: 
 	rm -f $(KERNEL_OBJS) $(STDLIB_OBJS) $(USERLAND_OBJS)
-	rm -f $(KERNEL) $(STDLIB) $(USERLAND_PROGS)
-
+	rm -f $(KERNEL)
+	rm -rf $(BINDIR) $(LIBDIR)
 ####### Compile
 
 main.o: src/main.s
