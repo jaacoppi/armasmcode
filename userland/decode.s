@@ -11,50 +11,32 @@
 .include "fs.s"
 
 .global decode
-// ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
-// from Table C3-1 A64 main encoding table
-.equiv unalloc, 0x0
-.equiv datapr_imm, 0x0
-.equiv imm0_26, 0x03FFFFFF
-.equiv imm5_23, 0x00FFFFE0
-// C 3.2 Branches, exception generating and system instructions
-.equiv C3_2a,	     0xA
-.equiv C3_2b,	     0xB
-.equiv C3_2_1, 0b011010
-.equiv C3_2_2, 0b0101010
-.equiv C3_2_3, 0b11010100
-.equiv C3_2_4, 0b1101010100
-.equiv C3_2_5, 0b011011
-.equiv C3_2_6, 0b00101
-.equiv C3_2_6a, 0b000101
-.equiv C3_2_6b, 0b100101
-.equiv C3_2_7, 0b1101011
-// C3.3 Loads and stores
-.equiv C3_3a,       0x4
-.equiv C3_3b,       0x6
-.equiv C3_3c,       0xC
-.equiv C3_3d,       0xE
-	.equiv C3_3_6, 0x8
-	.equiv C3_3_5a, 0x18
-	.equiv C3_3_5b, 0x1C
-// C3.4 Data processing - immediate
-.equiv C3_4a,       0x8
-.equiv C3_4b,       0x9
-// C3.5 Data processing - register
-.equiv C3_5a,       0x5
-.equiv C3_5b,       0x13
-// C3.6 Data processing - SIMD and floating point
-.equiv C3_6,       0x7
-
 
 .equiv datapr_reg, 0x0
 .equiv datapr_simd1, 0x0
 .equiv datapr_simd2, 0x0
 
 
+// ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
+// from Table C3-1 A64 main encoding table
+.equiv unalloc, 0x0
+.equiv datapr_imm, 0x0
+// C 3.2 Branches, exception generating and system instructions
+.equiv C3_2,	0b0001010
+// C3.3 Loads and stores
+.equiv C3_3,	0b0000100
+// C3.4 Data processing - immediate
+.equiv C3_4,	0b0001000
+// C3.5 Data processing - register
+.equiv C3_5,	0b0000100
+// C3.6 Data processing - SIMD and floating point
+.equiv C3_6,	0b0001111
+
+
+
 
 // get the immediate value and convert it to a relative value
-// most often this is used for memory addressing
+// most often this is used for memory addressing, jumps etc
 // registers:
 // x21 = program counter
 // x25 = instruction
@@ -83,163 +65,115 @@ decode:
 
 // go through a series of switches to find the right opcode
 // PASS 1: Encoding group
-// compare bits 28-25 of x25
-// TODO: this a-d method of masking unknown bits is messy. Figure out a better way
+// copy  bits 31-25 of x25 to x26
 mov x26, #0
-bfm x26,x25, #25, #28
+bfm x26,x25, #24, #31
 
-cmp x26, C3_6
-	beq switch_C3_6
-cmp x26, C3_5a
-	beq switch_C3_5
-cmp x26, C3_5b
-	beq switch_C3_5
-cmp x26, C3_4a
-	beq switch_C3_4
-cmp x26, C3_4b
-	beq switch_C3_4
-cmp x26, C3_3a
-	beq switch_C3_3
-cmp x26, C3_3b
-	beq switch_C3_3
-cmp x26, C3_3c
-	beq switch_C3_3
-cmp x26, C3_3d
-	beq switch_C3_3
-cmp x26, C3_2a
-	beq switch_C3_2
-cmp x26, C3_2b
-	beq switch_C3_2
+// loop known opcodes in x27, compare with current opcode
+//ldr x28, =test
+//m_printregh x28
+ldr x28, =opcode_start
+loop_opcodes:
+ldrb w27, [x28]
+and x29, x26, x27
+cmp x29, x27
+	bne loop_next_opcode //remember byte align 4
+	add x28, x28, #4
+	mov x0, x28
+	bl fputs
+	b phase2
+loop_next_opcode:
+add x28, x28, 0x4F
+ldr x27, =opcode_finish
 
+cmp x27, x28
+	blt phase2
+	add x27, x27, #128
+	b loop_opcodes
 
-b notfound
-switch_C3_2:
-	mov x26, #0
-	bfm x26,x25, #22, #31
-	cmp x26, C3_2_4
-		beq switch_C3_2_4
-	lsr x26, x26, #2
-	cmp x26, C3_2_4
-		beq switch_C3_2_3
-	lsr x26, x26, #1
-	cmp x26, C3_2_2
-		beq switch_C3_2_2
-	cmp x26, C3_2_7
-		beq switch_C3_2_7
+b phase2
+.macro mask_opcode opcode
+	mov x27, \opcode
+	and x28, x26, x27
+	cmp x27, x28
+.endm
 
-	mov x26, #0
-	bfm x26,x25, #25, #30
-	cmp x26, C3_2_5
- 		beq switch_C3_2_5
-	cmp x26, C3_2_1
- 		beq switch_C3_2_1
+mask_opcode C3_2
+	bne cmp_C3_3
+	m_fputs found_3_2
+cmp_C3_3:
+	masK_opcode C3_3
+	bne phase2
+	m_fputs found_3_3
+phase2:
 
-	// if none of the above, must be C3_2_6
-	mov x26, #0
-	bfm x26,x25, #26, #30
-	cmp x26, C3_2_6
-		b switch_C3_2_6
-
-
-	switch_C3_2_1: // Compare & branch (immediate)
-	switch_C3_2_2: // Condition branch (immediate)
-	switch_C3_2_3: // Exception
-	switch_C3_2_4: // System
-	switch_C3_2_5: // Test & Branch (immediate)
-	switch_C3_2_6: // Test & Branch (immediate)
-	mov x26, #0
-	bfm x26,x25, #26, #31
-	cmp x26, C3_2_6a
- 		beq switch_C3_2_6a
-	cmp x26, C3_2_6b
- 		beq switch_C3_2_6b
-	m_fputs found_c32
-	b endloop
-	switch_C3_2_6a:
-	m_fputs mnemonics_b
-	mov x27, #0
-	mov x28, #25
-	bl imm2rel
-	m_printregh x26
-	m_fputs newline
-	b endloop
-	switch_C3_2_6b:
-	m_fputs mnemonics_bl
-	mov x27, #0
-	mov x28, #25
-	bl imm2rel
-	m_printregh x26
-	m_fputs newline
-	b endloop
-
-	switch_C3_2_7: // Unconditional branch (register)
-	b notfound
-	b endloop
-
-switch_C3_3: // C3.3 Loads and stores
-	mov x26, #0
-	bfm x26,x25, #24, #29
-	cmp x26, C3_3_5a
- 		beq switch_C3_3_5
-	cmp x26, C3_3_5b
- 		beq switch_C3_3_5
-	b notfound
-	switch_C3_3_5:
-	mov x26, #0
-	bfm x26,x25, #24, #31
-	cmp x26, 0b01011000
-		beq C3_3_5_ldr64
-
-	b notfound
-	C3_3_5_ldr64:
-	m_fputs mnemonics_ldr
-
-// TODO:	bl parse_rt:
-	m_fputs ascii_x
-	and x1,x25, 0x1F // 1F = 11111 -> five bits for register
-	m_printregi x1 // register 31 should be called xxr, not x31!. See p. 115
-	m_fputs commaspace
-	mov x27, #5
-	mov x28, #19
-	bl imm2rel
-	m_printregh x26
-	m_fputs newline
-	b endloop
-
-		b endloop
-
-	b notfound
-
-switch_C3_4:
-	m_fputs found_c34
-	// movz and aliases! - D2 80  = 110100101 -> movz
-	b endloop
-switch_C3_5:
-	m_fputs found_c35
-	b endloop
-switch_C3_6:
-	m_fputs found_c36
-	b endloop
-
-b endloop
-
-
-notfound:
-m_fputs notfoundstr
+m_fputs newline
 endloop:
 	add x21, x21, 0x04 // increase iterator
 	b disassemble
 
 
-found_c32: .asciz "C32!\n"
-found_c33: .asciz "C33!\n"
-found_c34: .asciz "C34!\n"
-found_c35: .asciz "C35!\n"
-found_c36: .asciz "C35!\n"
+found_3_2: .asciz "found C3.2"
+found_3_3: .asciz "found C3.3"
 notfoundstr: .asciz "Unknown opcode!\n"
 commaspace: .asciz ", "
 ascii_x: .asciz "x"
-mnemonics_ldr: .asciz "ldr "
-mnemonics_b: .asciz "b "
-mnemonics_bl: .asciz "bl "
 
+// mnemonics, 4 bytes each
+mnem_ldr: .asciz 	"ldr "
+mnem_b: .asciz 	"b   "
+mnem_bl: .asciz 	"bl  "
+
+// operand types
+operand_rn:
+operand_rd:
+
+.balign 4
+.macro m_opcode opcode mnemonic
+	.int \opcode
+	.asciz "\mnemonic"
+	.space 70
+.endm
+
+.data
+opcode_start:
+m_opcode 0b01011000,  "ldr "	//3.2.4
+m_opcode 0b10010100,  "bl  "	// 3.2.6
+m_opcode 0b00000000,  "NOT IMPLEMENTED"	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY EROOR
+opcode_finish:
+
+// TODO:
+// OPCODE tables
+// 128 bits each:
+//	opcode		(32 bits)
+//	mnemonic 	(16 bits)
+//	1. operand type		(16 bits)
+//	1. operand startbit	(16 bits)
+//	2. operand type		(16 bits)
+//	2. operand startbit	(16 bits)
+//	3. operand type		(16 bits)
+//	3. operand startbit	(16 bits)
+//	32 bit padding
+
+
+//.equiv C3_2a,	     0xA
+//.equiv C3_2b,	     0xB
+//.equiv C3_2_1, 0b011010
+//.equiv C3_2_2, 0b0101010
+//.equiv C3_2_4, 0b1101010100
+//.equiv C3_2_5, 0b011011
+//.equiv C3_2_6, 0b00101
+//.equiv C3_2_6a, 0b000101
+//.equiv C3_2_6b, 0b100101
+//.equiv C3_2_7, 0b1101011
+.equiv C3_3a,       0x4
+.equiv C3_3b,       0x6
+.equiv C3_3c,       0xC
+.equiv C3_3d,       0xE
+	.equiv C3_3_6, 0x8
+	.equiv C3_3_5a, 0x18
+	.equiv C3_3_5b, 0x1C
+.equiv C3_4a,       0x8
+.equiv C3_4b,       0x9
+.equiv C3_5a,       0x5
+.equiv C3_5b,       0x13
