@@ -28,7 +28,7 @@ when in linux user mode, branch to write_linux
 write syscall parameters: *fd, *buf, count
 when in qemu-system-aarch64 full system emulation, branch to puts
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 // SYS and USER are defined at compile time in the Makefile. TARGET=SYS or TARGET=USER
 .ifdef	SYS
 	ldr x3, =DISPLAY_BASE
@@ -38,7 +38,7 @@ when in qemu-system-aarch64 full system emulation, branch to puts
 	// write syscall parameters: *fd, *buf, count
 	bl write_syscall
 .endif
-	m_poplink
+	m_callEpilogue
 	ret
 
 fopen:
@@ -50,9 +50,9 @@ register conventions:
 	x1 (input) ACCESSMODE
 	x2 (input) accessmode permissions flags if it's O_CREATE
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	bl open_syscall
-	m_poplink
+	m_callEpilogue
 	ret
 
 
@@ -62,9 +62,9 @@ a stub to call linux syscall fclose
 register conventions:
 	x0 (input) file descriptor
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	bl close_syscall
-	m_poplink
+	m_callEpilogue
 	ret
 
 fread:
@@ -76,9 +76,9 @@ register conventions:
 	x2 (input) number of elements
 	x3 (input) file descriptor
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	bl read_syscall
-	m_poplink
+	m_callEpilogue
 	ret
 fputc:
 /*=============================================================================
@@ -89,13 +89,13 @@ register conventions:
 	output (linux write syscall)
 	 write syscall parameters: *fd, *buf, count
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	// arrange the parameters for fwrite
 	mov x1, x0
 	mov x2, #1
 	mov x0, #0
 	bl fwrite
-	m_poplink
+	m_callEpilogue
 	// print and advance pointer
 //	str x0, [x3]	// TODO: is this post indexing or pre-indexing?
 	ret
@@ -109,7 +109,7 @@ register conventions:
 	x1 holds the index of string
 	x2 temp
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	mov x1, x0
 	ldrb w0, [x1]
 	// if the char pointer is not \0, fputc it and loop
@@ -125,16 +125,16 @@ register conventions:
 		ldrb w0, [x1], 1
 		b fputs_loop
 	fputs_nullexit: // null found, exit
-	m_poplink
+	m_callEpilogue
 	ret
 
 fseek:
 /*=============================================================================
 Wrapper to lseek
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	bl lseek_syscall
-	m_poplink
+	m_callEpilogue
 	ret
 
 write_int:
@@ -146,12 +146,12 @@ register conventions:
 	uses registers x0, x1,x2, x9 since write uses them
 =============================================================================*/
 	// store calling subroutine return address
-	m_pushlink
+	m_callPrologue
 	// we could either use a caller defined string in x1, or suply a local one
 	ldr x1, =writeint_tmp
 	bl itoa
 	m_fputs writeint_tmp
-	m_poplink
+	m_callEpilogue
 	ret
 
 

@@ -57,7 +57,7 @@ register conventions:
 	x9 temp
 	x10 temp
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	// print heap top
 	m_fputs kheaptopstr
 	ldr x1, =heap_unalignedtop
@@ -127,7 +127,7 @@ register conventions:
 		str x1, [x0]
 // for debug	bl memdump
 	bl freemem
-	m_poplink
+	m_callEpilogue
 	ret
 
 mm_freelist_getlistaddr:
@@ -161,7 +161,7 @@ register conventions:
 	x0 (input) address of listitem, (output) address of memory location
 	x1 temp
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	// From list address to list index:
 	// index = (address - heap_list_start) / listitemsize (8bytes)
 	ldr x1, =heap_list_start
@@ -175,7 +175,7 @@ register conventions:
 	add x0, x0, x1
 	// 4kb align
 	and x0, x0, 0xFFFFFFFFFFFFF000
-	m_poplink
+	m_callEpilogue
 	ret
 
 mm_freelist_getlast:
@@ -185,7 +185,7 @@ register conventions:
 	x0 (output) address of last item in list
 	x1 (output) address of second last item in list
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	ldr x0, =heap_list_start
 	ldr x1, =heap_list_start
 	getlast_loop:
@@ -198,7 +198,7 @@ register conventions:
 	getlast_lastfound:
 	// we've found the last (and second last item. Return
 	// x1 now has the memory address of the last item
-	m_poplink
+	m_callEpilogue
 	ret
 
 
@@ -209,7 +209,7 @@ register conventions:
 	x0 (input) size of area in 4kb chunks, (output) start address or RET_ERR
 	x1, x2: temp
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	// get the last and second last items in list
 	bl mm_freelist_getlast
 	// see that we have a free list item to allocate. If not, return 0
@@ -228,13 +228,13 @@ register conventions:
 	bl memdump
 	// end debug
 	// return address of memory - corresponds to last item of free list
-	m_poplink
+	m_callEpilogue
 	ret
 	// return error, no free memory left
 	malloc_reterr:
 	mov  x0, RET_ERR
 	bl exit
-	m_poplink
+	m_callEpilogue
 	ret
 
 kfree:
@@ -244,7 +244,7 @@ register conventions:
 	x0 (input) start address of freed memory area
 	x9 temp holding address of list item
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	// get list item equivalent to allocated memory
 	bl mm_freelist_getlistaddr
 	mov x9, x0
@@ -261,7 +261,7 @@ register conventions:
 	bl memdump
 	// end debug
 
-	m_poplink
+	m_callEpilogue
 	ret
 
 freemem:
@@ -269,7 +269,7 @@ freemem:
 Print out currently available memory
 register conventions:
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	m_fputs freememstr
 	mov x0, #0 // iterator
 	ldr x1, =heap_list_start
@@ -287,7 +287,7 @@ register conventions:
 	mul x0, x0, x1
 	m_printregh x0
 	m_fputs newline
-	m_poplink
+	m_callEpilogue
 	ret
 
 kheapliststr: .asciz "Kernel heap free list start: "

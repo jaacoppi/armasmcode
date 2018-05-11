@@ -43,17 +43,17 @@ fiq:    b .
 b _start
 
 except_undefined:
-	m_pushlink
+	m_callPrologue
 	m_fputs undefinedstr
-	m_poplink
+	m_callEpilogue
 	ret
 
 
 // see Sloss et al, 11.2., p. 391 for a reference implementation
 except_swi:
-	m_pushlink
+	m_callPrologue
 	m_fputs swistr
-	m_poplink
+	m_callEpilogue
 	ret
 
 .data

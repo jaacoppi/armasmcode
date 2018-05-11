@@ -110,7 +110,7 @@ register conventions:
 	x0 (input) register value
 	x1, x2 (temp)
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	str x0, [sp, #-stack_align]!
         m_fputs hex1
 	ldr x0, [sp], #stack_align
@@ -120,7 +120,7 @@ register conventions:
         ldr x0, =tmpstr
         bl fwrite
         m_fputs hex2
-	m_poplink
+	m_callEpilogue
 	ret
 
 
@@ -135,7 +135,7 @@ top of stack
 	m_fputs stracestr
   	mov x0, sp      
 	ldr x1, =STACK_TOP
-        m_pushlink // don't show return address of this subroutine in strace
+        m_callPrologue // don't show return address of this subroutine in strace
 	// loop until we've reahed STACK_TOP
         strace_loop:
                 cmp x1, x0
@@ -148,7 +148,7 @@ top of stack
                         add x0, x0, #stack_align // iterate next word - 8 bytes
 			b strace_loop
         strace_endloop:
-                m_poplink
+                m_callEpilogue
                 ret
 
 memdump:
@@ -158,7 +158,7 @@ register conventions:
 	x0 a memory address (thus a pointer)
 	x1 temp
 =============================================================================*/
-	m_pushlink
+	m_callPrologue
 	str x0, [sp, #-stack_align]!
 	str x1, [sp, #-stack_align]!
 	// print address
@@ -172,7 +172,7 @@ register conventions:
 	m_fputs newline
 	ldr x1, [sp], #stack_align
 	ldr x0, [sp], #stack_align
-	m_poplink
+	m_callEpilogue
 	ret		// end of memdump
 
 .data
