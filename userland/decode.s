@@ -11,28 +11,7 @@
 .include "fs.s"
 
 .global decode
-
-.equiv datapr_reg, 0x0
-.equiv datapr_simd1, 0x0
-.equiv datapr_simd2, 0x0
-
-
-// ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
-// from Table C3-1 A64 main encoding table
-.equiv unalloc, 0x0
-.equiv datapr_imm, 0x0
-// C 3.2 Branches, exception generating and system instructions
-.equiv C3_2,	0b0001010
-// C3.3 Loads and stores
-.equiv C3_3,	0b0000100
-// C3.4 Data processing - immediate
-.equiv C3_4,	0b0001000
-// C3.5 Data processing - register
-.equiv C3_5,	0b0000100
-// C3.6 Data processing - SIMD and floating point
-.equiv C3_6,	0b0001111
-
-
+.balign 4
 
 
 // get the immediate value and convert it to a relative value
@@ -44,7 +23,7 @@
 // x27 = input: starting bit
 // x28 = input: how many bits
 imm2rel:
-	lsr x26, x25, x27	// move to 0 bit
+	lsr x26, x25, x27	// move to 0 bit (TODO: assuming a value for x27..)
 	mov x27, #64
 	sub x28, x27, x28
 	mov x27, 0xFFFFFFFFFFFFFFFF	// bitmask out unnecessary bits
@@ -67,23 +46,41 @@ decode:
 // PASS 1: Encoding group
 // copy  bits 31-25 of x25 to x26
 mov x26, #0
-bfm x26,x25, #24, #31
+ubfx x26,x25, #24, #31
 
 // loop known opcodes in x27, compare with current opcode
-//ldr x28, =test
-//m_printregh x28
 ldr x28, =opcode_start
 loop_opcodes:
 ldrb w27, [x28]
 and x29, x26, x27
 cmp x29, x27
 	bne loop_next_opcode //remember byte align 4
+	// print mnemonic
 	add x28, x28, #4
 	mov x0, x28
 	bl fputs
+	// find and print first operand
+	add x28, x28, #4
+	ldr x29, [x28]
+	lsr x29, x29, #8
+	cmp x29, #0	// no more operands
+		beq phase2
+	cmp x29, reg64
+		bne phase2
+		m_fputs ascii_x
+		// next byte has the starting bit
+		add x28, x28, #4
+		mov x29, x25 	// opcode to be masked
+		ldrb w28, [x28]  // starting bit
+		lsl x29, x29, x28 // move starting bit to be 0
+		mov x27, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (31-5)
+		and x29, x29, x27
+		m_printregi x29
+		m_fputs commaspace
+
 	b phase2
-loop_next_opcode:
-add x28, x28, 0x4F
+loop_next_opcode: // compare to next opcode if we haven't loop them all yet
+add x28, x28, #19	// TODO: use equiv or something for the size of the struct
 ldr x27, =opcode_finish
 
 cmp x27, x28
@@ -91,71 +88,48 @@ cmp x27, x28
 	add x27, x27, #128
 	b loop_opcodes
 
-b phase2
-.macro mask_opcode opcode
-	mov x27, \opcode
-	and x28, x26, x27
-	cmp x27, x28
-.endm
-
-mask_opcode C3_2
-	bne cmp_C3_3
-	m_fputs found_3_2
-cmp_C3_3:
-	masK_opcode C3_3
-	bne phase2
-	m_fputs found_3_3
-phase2:
+phase2: //TODO: what is phase2 exactly?
 
 m_fputs newline
 endloop:
 	add x21, x21, 0x04 // increase iterator
-	b disassemble
+	b disassemble // TODO: ret should be enough, remember to push link
 
 
-found_3_2: .asciz "found C3.2"
-found_3_3: .asciz "found C3.3"
-notfoundstr: .asciz "Unknown opcode!\n"
+
+
+
+
+// ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
+// from Table C3-1 A64 main encoding table
+
+// opcode struct
+// TODO: don't use padding (see decode())
+.macro m_opcode opcode mnemonic operand_type startbit
+	.int \opcode
+	.asciz "\mnemonic"
+	.byte \operand_type
+	.byte \startbit
+	.space 8
+.endm
+
+// operand types
+.equiv reg64, 0x10	// 64bit register, 5 bits of opcode
+.equiv imm19, 0x20
+
+.data
+opcode_start: // supportedopcodes are listed here
+m_opcode 0b01011000,  "ldr ", reg64, 0	//3.3.5 Load register (literal)
+m_opcode 0b10010100,  "bl  ", 0, 0	// 3.2.6
+m_opcode 0b00000000,  "NOT IMPLEMENTED"	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY ERROR
+opcode_finish:
+
+// strings
 commaspace: .asciz ", "
 ascii_x: .asciz "x"
 
-// mnemonics, 4 bytes each
-mnem_ldr: .asciz 	"ldr "
-mnem_b: .asciz 	"b   "
-mnem_bl: .asciz 	"bl  "
 
-// operand types
-operand_rn:
-operand_rd:
-
-.balign 4
-.macro m_opcode opcode mnemonic
-	.int \opcode
-	.asciz "\mnemonic"
-	.space 70
-.endm
-
-.data
-opcode_start:
-m_opcode 0b01011000,  "ldr "	//3.2.4
-m_opcode 0b10010100,  "bl  "	// 3.2.6
-m_opcode 0b00000000,  "NOT IMPLEMENTED"	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY EROOR
-opcode_finish:
-
-// TODO:
-// OPCODE tables
-// 128 bits each:
-//	opcode		(32 bits)
-//	mnemonic 	(16 bits)
-//	1. operand type		(16 bits)
-//	1. operand startbit	(16 bits)
-//	2. operand type		(16 bits)
-//	2. operand startbit	(16 bits)
-//	3. operand type		(16 bits)
-//	3. operand startbit	(16 bits)
-//	32 bit padding
-
-
+// THESE ALL ARE TO BE DELETED
 //.equiv C3_2a,	     0xA
 //.equiv C3_2b,	     0xB
 //.equiv C3_2_1, 0b011010
@@ -177,3 +151,13 @@ opcode_finish:
 .equiv C3_4b,       0x9
 .equiv C3_5a,       0x5
 .equiv C3_5b,       0x13
+// C 3.2 Branches, exception generating and system instructions
+.equiv C3_2,	0b0001010
+// C3.3 Loads and stores
+.equiv C3_3,	0b0000100
+// C3.4 Data processing - immediate
+.equiv C3_4,	0b0001000
+// C3.5 Data processing - register
+.equiv C3_5,	0b0000100
+// C3.6 Data processing - SIMD and floating point
+.equiv C3_6,	0b0001111
