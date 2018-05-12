@@ -161,7 +161,7 @@ register conventions:
 	add x20, x20, 0x3 // adjust memory pointer, we'll be reading little endian
 	displayloop:
 		cmp x24, #0
-		beq decode
+		beq decode	// TODO: reorder loop to be able to return from decode, b dissamble in decode.s is spaghetti
 		ldrb w23, [x20],-0x01
 
                // convert the hex value to an ascii string
@@ -189,7 +189,6 @@ register conventions:
 		sub x24, x24, #1
 		b displayloop
 
-	b decode
 
 close:
 	mov x0, x19

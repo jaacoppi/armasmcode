@@ -17,75 +17,77 @@
 // get the immediate value and convert it to a relative value
 // most often this is used for memory addressing, jumps etc
 // registers:
-// x21 = program counter
+// x21 = loop counter
 // x25 = instruction
-// x26 = output result
-// x27 = input: starting bit
-// x28 = input: how many bits
+// x9 = output result
+// x10 = input: starting bit
+// x11 = input: how many bits
 imm2rel:
-	lsr x26, x25, x27	// move to 0 bit (TODO: assuming a value for x27..)
-	mov x27, #64
-	sub x28, x27, x28
-	mov x27, 0xFFFFFFFFFFFFFFFF	// bitmask out unnecessary bits
-	lsr x27, x27, x28
-	and  x26, x26, x27
-	lsl x26, x26, #2
-	add x26, x26, x21
+	lsr x9, x25, x10	// move to 0 bit (TODO: assuming a value for x10..)
+	mov x10, #64
+	sub x11, x10, x11
+	mov x10, 0xFFFFFFFFFFFFFFFF	// bitmask out unnecessary bits
+	lsr x10, x10, x11
+	and  x9, x26, x10
+	lsl x9, x26, #2
+	add x9, x26, x21
 	ret
 
 
 
-// x20 is the memory pointer
-// x25 is the value to be decoded.
-// x26 and x27 are temp
+// decode an opcode and print it
+// registers:
+// x25 (input) = opcode to be decoded
+// x20 (input) = memory pointer
+// x9, x10, x11 = temp
 
 decode:
 	add x20, x20, 0x5 // reset memmory pointer
 
 // go through a series of switches to find the right opcode
 // PASS 1: Encoding group
-// copy  bits 31-25 of x25 to x26
-mov x26, #0
-ubfx x26,x25, #24, #31
+// copy  bits 31-25 of x25 to x9
+mov x9, #0
+ubfx x9,x25, #24, #31
 
-// loop known opcodes in x27, compare with current opcode
-ldr x28, =opcode_start
+// loop known opcodes in x10, compare with current opcode
+ldr x11, =opcode_start
 loop_opcodes:
-ldrb w27, [x28]
-and x29, x26, x27
-cmp x29, x27
+ldrb w10, [x11]
+and x12, x9, x10
+cmp x12, x10
 	bne loop_next_opcode //remember byte align 4
 	// print mnemonic
-	add x28, x28, #4
-	mov x0, x28
+	add x11, x11, #4
+	mov x0, x11
 	bl fputs
 	// find and print first operand
-	add x28, x28, #4
-	ldr x29, [x28]
-	lsr x29, x29, #8
-	cmp x29, #0	// no more operands
+	add x11, x11, #4
+	ldr x12, [x11]
+	lsr x12, x12, #8
+	cmp x12, #0	// no more operands
 		beq phase2
-	cmp x29, reg64
+	cmp x12, reg64
 		bne phase2
 		m_fputs ascii_x
 		// next byte has the starting bit
-		add x28, x28, #4
-		mov x29, x25 	// opcode to be masked
-		ldrb w28, [x28]  // starting bit
-		lsl x29, x29, x28 // move starting bit to be 0
-		mov x27, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (31-5)
-		and x29, x29, x27
-		m_printregi x29
+		add x11, x11, #4
+		mov x12, x25 	// opcode to be masked
+		ldrb w11, [x11]  // starting bit
+		lsl x12, x12, x11 // move starting bit to be 0
+		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (31-5)
+		and x12, x12, x10
+		m_printregi x12
 		m_fputs commaspace
 
 	b phase2
 loop_next_opcode: // compare to next opcode if we haven't loop them all yet
-add x28, x28, #19	// TODO: use equiv or something for the size of the struct
-ldr x27, =opcode_finish
+add x11, x11, #19	// TODO: use equiv or something for the size of the struct
+ldr x10, =opcode_finish
 
-cmp x27, x28
+cmp x10, x11
 	blt phase2
-	add x27, x27, #128
+	add x10, x10, #128
 	b loop_opcodes
 
 phase2: //TODO: what is phase2 exactly?
