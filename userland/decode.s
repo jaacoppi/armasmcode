@@ -42,61 +42,63 @@ imm2rel:
 // x9, x10, x11 = temp
 
 decode:
+	m_callPrologue
+
 	add x20, x20, 0x5 // reset memmory pointer
 
-// go through a series of switches to find the right opcode
-// PASS 1: Encoding group
-// copy  bits 31-25 of x25 to x9
-mov x9, #0
-ubfx x9,x25, #24, #31
+	// go through a series of switches to find the right opcode
+	// PASS 1: Encoding group
+	// copy  bits 31-25 of x25 to x9
+	mov x9, #0
+	ubfx x9,x25, #24, #31
 
-// loop known opcodes in x10, compare with current opcode
-ldr x11, =opcode_start
-loop_opcodes:
-ldrb w10, [x11]
-and x12, x9, x10
-cmp x12, x10
-	bne loop_next_opcode //remember byte align 4
+	// loop known opcodes in x10, compare with current opcode
+	ldr x11, =opcode_start
+	loop_opcodes:
+	ldrb w10, [x11]
+	and x12, x9, x10
+	cmp x12, x10
+		bne loop_next_opcode //remember byte align 4
+	// Found a matching opcode
 	// print mnemonic
 	add x11, x11, #4
 	mov x0, x11
 	bl fputs
-	// find and print first operand
+	// find and print first operand and value
 	add x11, x11, #4
 	ldr x12, [x11]
 	lsr x12, x12, #8
 	cmp x12, #0	// no more operands
-		beq phase2
+		beq endloop
 	cmp x12, reg64
-		bne phase2
-		m_fputs ascii_x
-		// next byte has the starting bit
+		bne endloop
+		// next byte has the starting bit, mask it
 		add x11, x11, #4
 		mov x12, x25 	// opcode to be masked
 		ldrb w11, [x11]  // starting bit
 		lsl x12, x12, x11 // move starting bit to be 0
-		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (31-5)
+		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
 		and x12, x12, x10
+		// print the register value (currently assumes it's simply x. TODO: handle w and others
+		m_fputs ascii_x
 		m_printregi x12
 		m_fputs commaspace
 
-	b phase2
-loop_next_opcode: // compare to next opcode if we haven't loop them all yet
-add x11, x11, #19	// TODO: use equiv or something for the size of the struct
-ldr x10, =opcode_finish
+	b endloop
 
-cmp x10, x11
-	blt phase2
+	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
+	add x11, x11, #19	// TODO: use equiv or something for the size of the struct
+	ldr x10, =opcode_finish
+
+	cmp x10, x11
+		blt endloop
 	add x10, x10, #128
 	b loop_opcodes
 
-phase2: //TODO: what is phase2 exactly?
-
-m_fputs newline
-endloop:
-	add x21, x21, 0x04 // increase iterator
-	b disassemble // TODO: ret should be enough, remember to push link
-
+	endloop:
+	m_fputs newline
+	m_callEpilogue
+	ret
 
 
 

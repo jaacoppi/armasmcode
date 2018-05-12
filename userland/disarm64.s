@@ -132,7 +132,7 @@ read_phdr: // read the elf program header from disk to memory
 // iterator
 // x21 = entry point (same as readelf)
 // x22 = program segment end point (entry point + p_filesz)
-add x22, x21, 0x20 // for debug
+add x22, x21, 0x20 // for debug, only write this amount
 disassemble:
 /*=============================================================================
 Read 32 bits (=one opcde) at a time and disassemble it
@@ -160,8 +160,6 @@ register conventions:
 	mov x24, #4
 	add x20, x20, 0x3 // adjust memory pointer, we'll be reading little endian
 	displayloop:
-		cmp x24, #0
-		beq decode	// TODO: reorder loop to be able to return from decode, b dissamble in decode.s is spaghetti
 		ldrb w23, [x20],-0x01
 
                // convert the hex value to an ascii string
@@ -186,8 +184,13 @@ register conventions:
 	                bl fputs
 	                m_fputs space
 
+		// decode every 32 bits
 		sub x24, x24, #1
-		b displayloop
+		cmp x24, #0
+			bne displayloop
+		bl decode
+	       add x21, x21, 0x04 // increase iterator
+		b disassemble
 
 
 close:
