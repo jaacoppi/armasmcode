@@ -39,7 +39,8 @@ imm2rel:
 // registers:
 // x25 (input) = opcode to be decoded
 // x20 (input) = memory pointer
-// x9, x10, x11 = temp
+// x9, x10, x11, x12 = temp
+// x13 = holds the starting address of an item in the opcode struct
 
 decode:
 	m_callPrologue
@@ -47,52 +48,55 @@ decode:
 	add x20, x20, 0x5 // reset memmory pointer
 
 	// go through a series of switches to find the right opcode
-	// PASS 1: Encoding group
 	// copy  bits 31-25 of x25 to x9
 	mov x9, #0
 	ubfx x9,x25, #24, #31
 
 	// loop known opcodes in x10, compare with current opcode
-	ldr x11, =opcode_start
+	ldr x13, =opcode_start
 	loop_opcodes:
+	mov x11, x13
 	ldrb w10, [x11]
 	and x12, x9, x10
 	cmp x12, x10
-		bne loop_next_opcode //remember byte align 4
+		bne loop_next_opcode
 	// Found a matching opcode
 	// print mnemonic
-	add x11, x11, #4
+	add x11, x11, #4 // TODO: is this assuming a 4 byte int size?)
 	mov x0, x11
 	bl fputs
 	// find and print first operand and value
-	add x11, x11, #4
-	ldr x12, [x11]
-	lsr x12, x12, #8
+	add x11, x11, #5
+	loop_operands:
+	ldrb w12, [x11]
 	cmp x12, #0	// no more operands
 		beq endloop
+	try_reg64:
 	cmp x12, reg64
-		bne endloop
+		bne try_imm19
 		// next byte has the starting bit, mask it
-		add x11, x11, #4
-		mov x12, x25 	// opcode to be masked
-		ldrb w11, [x11]  // starting bit
-		lsl x12, x12, x11 // move starting bit to be 0
+		add x11, x11, #1
 		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
-		and x12, x12, x10
+		bl mask_value
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
 		m_fputs ascii_x
 		m_printregi x12
 		m_fputs commaspace
+		b loop_operands
+	try_imm19:
+	cmp x12, imm19
+		bne endloop
+		b endloop
 
-	b endloop
+	next_byte:
+	add x11, x11, #1
+	b loop_operands
 
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
-	add x11, x11, #19	// TODO: use equiv or something for the size of the struct
+	add x13, x13, opcode_s	// TODO: use equiv or something for the size of the struct
 	ldr x10, =opcode_finish
-
-	cmp x10, x11
+	cmp x10, x13
 		blt endloop
-	add x10, x10, #128
 	b loop_opcodes
 
 	endloop:
@@ -104,27 +108,54 @@ decode:
 
 
 
+// mask a value starting at bit x11 with mask at x10
+// note that this doesn't follow register conventions, supposed to be called inside decode()
+// x10 (input) = bitmask
+// x11 (input) = pointer to starting 64 bits
+// x11 (output) = value of 1st byte of the 64 bits
+// x25 (input) = opcode
+// x12 (output) = value
+// x14 = temp, restored
+mask_value:
+	m_push x14
+	mov x12, x25 	// opcode to be masked
+	ldrb w14, [x11]  // starting bit
+	lsl x12, x12, x14 // move starting bit to be 0
+	and x12, x12, x10
+	m_pop x14
+	ret // note we haven't pushed the link register..
+
+
+
 // ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
 // from Table C3-1 A64 main encoding table
 
 // opcode struct
 // TODO: don't use padding (see decode())
-.macro m_opcode opcode mnemonic operand_type startbit
+//.macro m_opcode opcode mnemonic operand1_type startbit1 operand2_type startbit2
+.macro m_opcode opcode mnemonic operand1_type startbit1 operand2_type startbit2
 	.int \opcode
 	.asciz "\mnemonic"
-	.byte \operand_type
-	.byte \startbit
-	.space 8
+	.byte \operand1_type
+	.byte \startbit1
+	.byte \operand2_type
+	.byte \startbit2
 .endm
-
 // operand types
 .equiv reg64, 0x10	// 64bit register, 5 bits of opcode
 .equiv imm19, 0x20
 
 .data
 opcode_start: // supportedopcodes are listed here
-m_opcode 0b01011000,  "ldr ", reg64, 0	//3.3.5 Load register (literal)
-m_opcode 0b10010100,  "bl  ", 0, 0	// 3.2.6
+
+// First opcode gives us the size of the struct.
+opcodestruct_start:
+m_opcode 0b01011000,  "ldr ", reg64, 0, imm19, 5	//3.3.5 Load register (literal)
+opcodestruct_finish:
+.equiv opcode_s, opcodestruct_finish - opcodestruct_start 	
+
+// rest of opcodes
+m_opcode 0b10010100,  "bl  ", 0, 0, 0, 0	// 3.2.6
 m_opcode 0b00000000,  "NOT IMPLEMENTED"	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY ERROR
 opcode_finish:
 
