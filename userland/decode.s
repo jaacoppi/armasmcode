@@ -14,23 +14,17 @@
 .balign 4
 
 
-// get the immediate value and convert it to a relative value
+// based on an imm value, get absolute value (program counter + imm*4)
 // most often this is used for memory addressing, jumps etc
 // registers:
-// x21 = loop counter
-// x25 = instruction
-// x9 = output result
-// x10 = input: starting bit
-// x11 = input: how many bits
-imm2rel:
-	lsr x9, x25, x10	// move to 0 bit (TODO: assuming a value for x10..)
-	mov x10, #64
-	sub x11, x10, x11
-	mov x10, 0xFFFFFFFFFFFFFFFF	// bitmask out unnecessary bits
-	lsr x10, x10, x11
-	and  x9, x26, x10
-	lsl x9, x26, #2
-	add x9, x26, x21
+// x21 = program counter
+// x12 (input) = immediate value
+// x12 (output) = relative value
+// x10 = temp
+imm2abs:
+	mov x10, #4
+	mul x12, x12, x10
+	add x12, x12, x21
 	ret
 
 
@@ -66,8 +60,9 @@ decode:
 	mov x0, x11
 	bl fputs
 	// find and print first operand and value
-	add x11, x11, #5
+	add x11, x11, #4
 	loop_operands:
+	add x11, x11, #1
 	ldrb w12, [x11]
 	cmp x12, #0	// no more operands
 		beq endloop
@@ -86,6 +81,13 @@ decode:
 	try_imm19:
 	cmp x12, imm19
 		bne endloop
+		// next byte has the starting bit, mask it
+		add x11, x11, #1
+		mov x10, 0x0007FFFF // mask bits 0-18
+		bl mask_value
+		bl imm2abs
+		// print the register value (currently assumes it's simply x. TODO: handle w and others
+		m_printregh x12
 		b endloop
 
 	next_byte:
@@ -122,6 +124,7 @@ mask_value:
 	ldrb w14, [x11]  // starting bit
 	lsr x12, x12, x14 // move starting bit to be 0
 	and x12, x12, x10
+
 	m_pop x14
 	ret // note we haven't pushed the link register..
 
@@ -152,7 +155,7 @@ opcode_start: // supportedopcodes are listed here
 opcodestruct_start:
 m_opcode 0b01011000,  "ldr ", reg64, 0, imm19, 5	//3.3.5 Load register (literal)
 opcodestruct_finish:
-.equiv opcode_s, opcodestruct_finish - opcodestruct_start 	
+.equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
 m_opcode 0b10010100,  "bl  ", 0, 0, 0, 0	// 3.2.6
