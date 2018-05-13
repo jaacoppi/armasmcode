@@ -21,7 +21,7 @@
 // x12 (input) = immediate value
 // x12 (output) = relative value
 // x10 = temp
-imm2abs:
+imm2rel:
 	mov x10, #4
 	mul x12, x12, x10
 	add x12, x12, x21
@@ -82,8 +82,25 @@ decode:
 	try_imms:
 	cmp x12, codes_imm
 		blt endloop	// last known operand, end loop
+	cmp x12, codes_imm_abs	// set x15 whether or not to use imm2rel
+		bge set_absolute
+		blt set_relative
+
+			set_absolute: // the immediate is an absolute value. Don't use imm2rel
+				mov x15, #1
+				sub x12, x12, imm_abs	// convert so the rest of the logic finds these
+				b absrel_set
+			set_relative: //  the immediate is relative to current program counter. use imm2rel
+				mov x15, #0
+				b absrel_set
+		absrel_set:
 		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x11, x11, #1
+		try_imm16:
+		cmp x12, imm16
+			bne try_imm19
+			mov x10, 0xFFFF // mask bits 0-18
+			b found_bits
 		try_imm19:
 		cmp x12, imm19
 			bne try_imm26
@@ -96,7 +113,10 @@ decode:
 			b found_bits
 		found_bits:
 		bl mask_value
-		bl imm2abs
+		cmp x15, #0
+			bne imm2rel_ok
+			bl imm2rel
+		imm2rel_ok:
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
 		m_printregh x12
 		b endloop
@@ -157,9 +177,16 @@ mask_value:
 .endm
 // operand types
 .equiv reg64, 0x10	// 64bit register, 5 bits of opcode
-.equiv codes_imm, imm19
-.equiv imm19, 0x20
-.equiv imm26, 0x21
+.equiv codes_imm, imm16
+.equiv imm16, 0x20
+.equiv imm19, 0x21
+.equiv imm26, 0x22
+.equiv codes_imm_abs, imm16_abs
+.equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
+.equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
+.equiv imm19_abs, imm19 + imm_abs
+.equiv imm26_abs, imm26 + imm_abs
+
 .data
 opcode_start: // supportedopcodes are listed here
 
@@ -171,6 +198,7 @@ opcodestruct_finish:
 
 // rest of opcodes
 m_opcode 0b10010100,  "bl  ", imm26, 0, 0, 0	// 3.2.6
+m_opcode 0b10010010,  "mov ", reg64, 0, imm16_abs, 5	// 3. (move wide immediate, 64bit)
 m_opcode 0b00000000,  "TODO", 0, 0, 0, 0	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY ERROR
 opcode_finish:
 
