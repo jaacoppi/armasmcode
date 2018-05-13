@@ -120,7 +120,7 @@ mask_value:
 	m_push x14
 	mov x12, x25 	// opcode to be masked
 	ldrb w14, [x11]  // starting bit
-	lsl x12, x12, x14 // move starting bit to be 0
+	lsr x12, x12, x14 // move starting bit to be 0
 	and x12, x12, x10
 	m_pop x14
 	ret // note we haven't pushed the link register..
