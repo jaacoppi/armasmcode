@@ -26,13 +26,6 @@ register conventions:
 	x28 = temp for storing return code while printing
 =============================================================================*/
 	// TODO: check this out
-	mov x28, x0
-	m_fputs endmsg
-	m_fputs returnmsg
-	mov x0, x27
-	m_printregh x0
-	m_fputs newline
-	mov x0, x28
 	mov x8, sys_exit
 	svc #0
 
