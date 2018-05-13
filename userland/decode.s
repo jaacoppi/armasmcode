@@ -68,7 +68,7 @@ decode:
 		beq endloop
 	try_reg64:
 	cmp x12, reg64
-		bne try_imm19
+		bne try_imms
 		// next byte has the starting bit, mask it
 		add x11, x11, #1
 		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
@@ -78,19 +78,30 @@ decode:
 		m_printregi x12
 		m_fputs commaspace
 		b loop_operands
-	try_imm19:
-	cmp x12, imm19
-		bne endloop
-		// next byte has the starting bit, mask it
+
+	try_imms:
+	cmp x12, codes_imm
+		blt endloop	// last known operand, end loop
+		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x11, x11, #1
-		mov x10, 0x0007FFFF // mask bits 0-18
+		try_imm19:
+		cmp x12, imm19
+			bne try_imm26
+			mov x10, 0x0007FFFF // mask bits 0-18
+			b found_bits
+		try_imm26:
+		cmp x12, imm26
+			bne try_imm26
+			mov x10, 0x3FFFFFF // mask bits 0-26
+			b found_bits
+		found_bits:
 		bl mask_value
 		bl imm2abs
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
 		m_printregh x12
 		b endloop
 
-	next_byte:
+	next_byte:	// is this actually used anywhere?
 	add x11, x11, #1
 	b loop_operands
 
@@ -146,8 +157,9 @@ mask_value:
 .endm
 // operand types
 .equiv reg64, 0x10	// 64bit register, 5 bits of opcode
+.equiv codes_imm, imm19
 .equiv imm19, 0x20
-
+.equiv imm26, 0x21
 .data
 opcode_start: // supportedopcodes are listed here
 
@@ -158,8 +170,8 @@ opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
-m_opcode 0b10010100,  "bl  ", 0, 0, 0, 0	// 3.2.6
-m_opcode 0b00000000,  "NOT IMPLEMENTED"	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY ERROR
+m_opcode 0b10010100,  "bl  ", imm26, 0, 0, 0	// 3.2.6
+m_opcode 0b00000000,  "TODO", 0, 0, 0, 0	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY ERROR
 opcode_finish:
 
 // strings
