@@ -68,7 +68,7 @@ USERLAND_OBJS = $(CAT_OBJS) $(DISARM64_OBJS) $(HEXDUMP_OBJS) $(NEWFILE_OBJS) $(R
 all: build_hook $(STDLIB) $(KERNEL) $(USERLAND_PROGS)
 
 build_hook:
-	mkdir -p $(BINDIR) $(LIBDIR)
+	mkdir -p $(BINDIR) $(LIBDIR) tests/bin
 
 
 $(STDLIB): $(STDLIB_OBJS) $(HEADERS)
@@ -98,6 +98,9 @@ clean:
 	rm -f $(KERNEL_OBJS) $(STDLIB_OBJS) $(USERLAND_OBJS)
 	rm -f $(KERNEL)
 	rm -rf $(BINDIR) $(LIBDIR)
+	rm -rf tests/*.o
+	rm -rf tests/bin
+	rm -rf tests/*.txt
 ####### Compile
 
 main.o: src/main.s
@@ -140,6 +143,15 @@ readelf.o: userland/readelf.s $(HEADERS)
 
 elf.o: userland/elf.s $(HEADERS) userland/elf.o
 	$(AS) $(ASFLAGS) -o @ userland/elf.s
+
+### tests
+check: build_hook disarm_ldr1.o
+	tests/opcodes.test
+	rm tests/actual.txt tests/expected.txt
+
+disarm_ldr1.o: tests/disarm_ldr1.s
+	$(AS) $(ASFLAGS) -o tests/disarm_ldr1.o tests/disarm_ldr1.s
+	$(LD) -o tests/bin/disarm_ldr1 tests/disarm_ldr1.o
 
 ####### Install
 

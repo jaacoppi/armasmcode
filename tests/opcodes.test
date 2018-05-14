@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# test opcodes. Script returns 0 if there are no errors and 1 if there are errors.
+# Acknowledgements / script based on work from Espeak-NG
+
+# Test a command for presence and ability to output the sha1 hash of a file.
+check_hashcmd() {
+	which $1 &&
+	$1 </dev/null 2>/dev/null |
+	awk '{if ($1 != "da39a3ee5e6b4b0d3255bfef95601890afd80709") { exit 1; }}'
+}
+
+# Test some common commands to find the correct one for the system being tested on.
+echo -n "checking for SHA1 hashing command ... "
+if check_hashcmd sha1sum; then
+	sha1sum=sha1sum
+elif check_hashcmd sha1; then
+	sha1sum=sha1
+elif check_hashcmd shasum; then
+	sha1sum=shasum
+else
+	echo "no"
+	exit 1
+fi
+
+test_opcode() {
+	TEST_OPCODE=$1
+	EXPECTED=$2
+
+	echo "testing ${TEST_OPCODE}"
+	qemu-aarch64 bin/disarm64 tests/bin/disarm_ldr1 | $sha1sum | awk '{ print $1 }' > tests/actual.txt
+	echo "${EXPECTED}" > tests/expected.txt
+	diff tests/expected.txt tests/actual.txt || exit 1
+}
+
+test_opcode ldr1 d793b896452995be1e71ff3390493e32bf149c08
