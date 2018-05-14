@@ -55,16 +55,27 @@
 
 .text
 _start:
+// get command line arguments
+// argc
+m_pop x0
+cmp x0, #1
+	ble missing_argument
+	m_pop x0	// argv[0], name of executable
+	m_pop x0	// argv[1], first command line argument
+	mov x18, x0	// hold the pointer to the argument
+	b open
+missing_argument:
+	m_fputs missingargument
+	b exit
+
 	// load a file to memory with fopen and fread and memcpy
 	// TODO: maybe start using macros for error checking?
 	// at this point, x0 should containt the mem address
 open:
-	// TODO: command line argument
-	ldr x0, =filepath
 	mov x1, O_RDONLY
 	bl fopen
 	mov x19, x0
-	cmp x0, #-1
+	cmp x0, 0xFFFFFFFFFFFFFFFE // -1, but #-1 is not accepted for some reason
 		beq error_open
 	// TODO: see if this works if the file doesn't exist
 // we don't have a userland malloc implementation yet
@@ -203,7 +214,8 @@ close:
 error_open:
 error:
 	m_fputs errorstr
-	m_fputs filepath
+	mov x0, x18
+	bl fputs
 	m_fputs newline
         mov x0, #1
         b exit
@@ -211,15 +223,10 @@ error:
 
 
 .data
-filepath: .asciz "disarm64"
+missingargument: .asciz "Missing file operand.\n"
 
 verifystr: .asciz "This is not a 64 bit ELF file for Aarch64 machines\n"
 errorstr: .asciz "An error has occurred reading elf headers for file: "
-notfoundstr: .asciz "Unknown opcode!\n"
-commaspace: .asciz ", "
-ascii_x: .asciz "x"
-mnemonics_ldr: .asciz "ldr"
-mnemonics_b: .asciz "b"
 
 // the elf header from https://en.wikipedia.org/wiki/Executable_and_Linkable_Format#File_header
 // NOTE: this only supports 64bit format. In 32bit, the offsets after 0x18 are different
