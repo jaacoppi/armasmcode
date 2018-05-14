@@ -90,9 +90,9 @@
 .macro m_printregh reg
 	m_callPrologue
 	// push the register we're printing so m_fputs hex1 doesn't overwrite it
-	str \reg, [sp, #-8]!
+	str \reg, [sp, #-stack_align]!
 	m_fputs hex1
-	ldr \reg, [sp], #8
+	ldr \reg, [sp], #stack_align
 
 	mov x0, \reg
 	ldr x1, =tmpstr

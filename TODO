@@ -1,3 +1,12 @@
+== testing == 
+1. make disarm accept a command line argument to open a specific file.
+2. create one opcode source files to be disarmed:
+ldr x5, =address
+mov x10, 0x10FA
+bl =address
+etc
+md5sum the results and test against them so the functionality will not change
+
 == Memory handling ==
 dynamic memory handling, starting with removing static tmpstr 
 
