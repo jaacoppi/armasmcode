@@ -51,8 +51,7 @@ decode:
 	loop_opcodes:
 	mov x11, x13
 	ldrb w10, [x11]
-	and x12, x9, x10
-	cmp x12, x10
+	cmp x9, x10
 		bne loop_next_opcode
 	// Found a matching opcode
 	// print mnemonic
@@ -129,8 +128,12 @@ decode:
 	add x13, x13, opcode_s	// TODO: use equiv or something for the size of the struct
 	ldr x10, =opcode_finish
 	cmp x10, x13
-		blt endloop
+		blt unimplemented
 	b loop_opcodes
+
+	unimplemented:
+		m_fputs unimplemented_str
+		b endloop
 
 	endloop:
 	m_fputs newline
@@ -188,6 +191,13 @@ mask_value:
 .equiv imm26_abs, imm26 + imm_abs
 
 .data
+// strings
+unimplemented_str: .asciz "Unimplemented opcode"
+commaspace: .asciz ", "
+ascii_x: .asciz "x"
+
+
+
 opcode_start: // supportedopcodes are listed here
 
 // First opcode gives us the size of the struct.
@@ -199,13 +209,7 @@ opcodestruct_finish:
 // rest of opcodes
 m_opcode 0b10010100,  "bl  ", imm26, 0, 0, 0	// 3.2.6
 m_opcode 0b10010010,  "mov ", reg64, 0, imm16_abs, 5	// 3. (move wide immediate, 64bit)
-m_opcode 0b00000000,  "TODO", 0, 0, 0, 0	// NOT FOUND -> NOT IMPLEMENTED. DISPLAY ERROR
 opcode_finish:
-
-// strings
-commaspace: .asciz ", "
-ascii_x: .asciz "x"
-
 
 // THESE ALL ARE TO BE DELETED
 //.equiv C3_2a,	     0xA
