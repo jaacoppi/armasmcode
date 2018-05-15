@@ -125,10 +125,10 @@ decode:
 	b loop_operands
 
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
-	add x13, x13, opcode_s	// TODO: use equiv or something for the size of the struct
+	add x13, x13, opcode_s
 	ldr x10, =opcode_finish
 	cmp x10, x13
-		blt unimplemented
+		ble unimplemented
 	b loop_opcodes
 
 	unimplemented:

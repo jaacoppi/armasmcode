@@ -104,7 +104,6 @@ verify: // verify it's an elf file, 64 bits little endian and Aarch64 instructio
 	// at this point, store e_entry for later use
 	ldr x0, =e_entry
 	ldr x21, [x0]
-
 	b find_proghdr
 verify_error:
 	m_fputs verifystr
@@ -120,11 +119,14 @@ read_phdr: // read the elf program header from disk to memory
 
 	// read the size of prog header to memory starting at p_type. TODO: e_phentsize instead of 64
 	m_fread p_type, 64, x19
-	// get starting address and size of this program segment to x0 and x3
-	adr x0, p_type
-	add x0, x0, 0x20 // x0 now at p_filesz
-	ldr x3, [x0] //p_filesz now at x3
-	mov x22, x3
+	// this program segment ends at p_vaddrd + p_filesz
+	adr x0, p_vaddr
+	ldr x0, [x0] //p_filesz now at x3
+	mov x22, x0
+	adr x0, p_filesz
+	ldr x0, [x0]
+	add x22, x22, x0
+
 	// starting address for 1st program segment = size of file header + nr of prog hdrs * size of prog hdr
 	ldr x0, =e_phentsize
 	ldrb w1, [x0]
@@ -134,6 +136,7 @@ read_phdr: // read the elf program header from disk to memory
 	ldr x2, =e_ehsize
 	ldrb w0, [x2]
 	add x1,x0,x1 // x1 now contains starting address of first prog segment
+
 // now, read x1 bytes starting at x0 to get the actual file contents
 	m_fseek x19, x1, SEEK_SET
 	// read the size of prog header to memory starting SEEK_CUR. TODO: p_filesz instead of 0x1000
@@ -143,7 +146,6 @@ read_phdr: // read the elf program header from disk to memory
 // iterator
 // x21 = entry point (same as readelf)
 // x22 = program segment end point (entry point + p_filesz)
-add x22, x21, 0x20 // for debug, only write this amount
 disassemble:
 /*=============================================================================
 Read 32 bits (=one opcde) at a time and disassemble it
