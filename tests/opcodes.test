@@ -11,6 +11,9 @@ check_hashcmd() {
 }
 
 # Test some common commands to find the correct one for the system being tested on.
+echo -n "checking for unbuffer ... "
+which unbuffer || exit 1
+
 echo -n "checking for SHA1 hashing command ... "
 if check_hashcmd sha1sum; then
 	sha1sum=sha1sum
@@ -23,14 +26,15 @@ else
 	exit 1
 fi
 
+
 test_opcode() {
 	TEST_OPCODE=$1
 	EXPECTED=$2
 
 	echo "testing ${TEST_OPCODE}"
-	qemu-aarch64 bin/disarm64 tests/bin/disarm_ldr1 | $sha1sum | awk '{ print $1 }' > tests/actual.txt
+	unbuffer qemu-aarch64 bin/disarm64 tests/bin/disarm_ldr1 | $sha1sum | awk '{ print $1 }' > tests/actual.txt
 	echo "${EXPECTED}" > tests/expected.txt
 	diff tests/expected.txt tests/actual.txt || exit 1
 }
 
-test_opcode ldr1 d793b896452995be1e71ff3390493e32bf149c08
+test_opcode ldr1 4c52df38e0534213f549feef55f6c83aa2354691
