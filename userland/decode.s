@@ -208,6 +208,7 @@ opcodestruct_finish:
 
 // rest of opcodes
 m_opcode 0b10010100,  "bl  ", imm26, 0, 0, 0	// 3.2.6
+m_opcode 0b00010100,  "b   ", imm26, 0, 0, 0	// 3.2.6
 m_opcode 0b10010010,  "mov ", reg64, 0, imm16_abs, 5	// 3. (move wide immediate, 64bit)
 opcode_finish:
 
