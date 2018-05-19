@@ -39,3 +39,4 @@ test_opcode() {
 
 test_opcode disarm_ldr1 4c52df38e0534213f549feef55f6c83aa2354691
 test_opcode disarm_bl1 f82968cdf1a6b60b264bdcfed7903738e4ae2687
+test_opcode disarm_cmp 1f0d864409dd3425122b0155da2090d1ae08dcf9

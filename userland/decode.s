@@ -49,8 +49,15 @@ decode:
 	// loop known opcodes in x10, compare with current opcode
 	ldr x13, =opcode_start
 	loop_opcodes:
+	// bitmask the relevant 32 bits
 	mov x11, x13
-	ldrb w10, [x11]
+	ldr x10, [x11]
+	mov w10, w10
+	and x9, x10, x25
+	// compare to our table
+	add x11, x11, #4
+	ldr x10, [x11]
+	mov w10, w10
 	cmp x9, x10
 		bne loop_next_opcode
 	// Found a matching opcode
@@ -95,10 +102,15 @@ decode:
 		absrel_set:
 		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x11, x11, #1
+		try_imm12:
+		cmp x12, imm12
+			bne try_imm16
+			mov x10, 0x0FFF // mask bits 0-11
+			b found_bits
 		try_imm16:
 		cmp x12, imm16
 			bne try_imm19
-			mov x10, 0xFFFF // mask bits 0-18
+			mov x10, 0xFFFF // mask bits 0-15
 			b found_bits
 		try_imm19:
 		cmp x12, imm19
@@ -108,7 +120,7 @@ decode:
 		try_imm26:
 		cmp x12, imm26
 			bne try_imm26
-			mov x10, 0x3FFFFFF // mask bits 0-26
+			mov x10, 0x3FFFFFF // mask bits 0-25
 			b found_bits
 		found_bits:
 		bl mask_value
@@ -170,7 +182,8 @@ mask_value:
 // opcode struct
 // TODO: don't use padding (see decode())
 //.macro m_opcode opcode mnemonic operand1_type startbit1 operand2_type startbit2
-.macro m_opcode opcode mnemonic operand1_type startbit1 operand2_type startbit2
+.macro m_opcode bitmask opcode mnemonic operand1_type startbit1 operand2_type startbit2
+	.word \bitmask
 	.int \opcode
 	.asciz "\mnemonic"
 	.byte \operand1_type
@@ -180,12 +193,14 @@ mask_value:
 .endm
 // operand types
 .equiv reg64, 0x10	// 64bit register, 5 bits of opcode
-.equiv codes_imm, imm16
-.equiv imm16, 0x20
-.equiv imm19, 0x21
-.equiv imm26, 0x22
-.equiv codes_imm_abs, imm16_abs
+.equiv codes_imm, imm12
+.equiv imm12, 0x20
+.equiv imm16, 0x21
+.equiv imm19, 0x22
+.equiv imm26, 0x23
+.equiv codes_imm_abs, imm12_abs
 .equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
+.equiv imm12_abs, imm12 + imm_abs // if more, use the immediate value as it is
 .equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
 .equiv imm19_abs, imm19 + imm_abs
 .equiv imm26_abs, imm26 + imm_abs
@@ -196,20 +211,18 @@ unimplemented_str: .asciz "Unimplemented opcode"
 commaspace: .asciz ", "
 ascii_x: .asciz "x"
 
-
-
 opcode_start: // supportedopcodes are listed here
 
 // First opcode gives us the size of the struct.
 opcodestruct_start:
-m_opcode 0b01011000,  "ldr ", reg64, 0, imm19, 5	//3.3.5 Load register (literal)
+m_opcode 0xFF000000, 0x58000000,  "ldr ", reg64, 0, imm19, 5	//3.3.5 Load register (literal)
 opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
-m_opcode 0b10010100,  "bl  ", imm26, 0, 0, 0	// 3.2.6
-m_opcode 0b00010100,  "b   ", imm26, 0, 0, 0	// 3.2.6
-m_opcode 0b10010010,  "mov ", reg64, 0, imm16_abs, 5	// 3. (move wide immediate, 64bit)
+m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0	// 3.2.6
+m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0	// 3.2.6
+m_opcode 0xF100001F, 0xF100001F,  "cmp ", reg64, 5, imm12_abs, 10 // 5.6.45. This is SUBZ, but alias to cmp. TODO: 32/64bit, shift
 opcode_finish:
 
 // THESE ALL ARE TO BE DELETED
