@@ -37,6 +37,6 @@ test_opcode() {
 	diff tests/expected.txt tests/actual.txt || exit 1
 }
 
-test_opcode disarm_ldr1 4c52df38e0534213f549feef55f6c83aa2354691
-test_opcode disarm_bl1 f82968cdf1a6b60b264bdcfed7903738e4ae2687
-test_opcode disarm_cmp 1f0d864409dd3425122b0155da2090d1ae08dcf9
+test_opcode disarm_ldr1 a5da4215d96f35404a56a380e61b6dcd2b4d1dd0
+test_opcode disarm_bl1 f05dea51ca69da7f7671645421d87d0d71ddb5c3
+test_opcode disarm_cmp 4bcc1b4ce1e44c54ea20ff0a82ead0a4a9875226
