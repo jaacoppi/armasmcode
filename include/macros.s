@@ -70,7 +70,6 @@
 	bl itoa
 	ldr x0, =tmpstr
 	bl fputs
-	m_fputs hex2
 	m_callPrologue
 .endm
 
@@ -100,7 +99,6 @@
 	bl itoa
 	ldr x0, =tmpstr
 	bl fputs
-	m_fputs hex2
 	m_callEpilogue
 .endm
 
@@ -116,5 +114,4 @@
 .data
 tmpstr: .asciz "0123456789ABCDEF"
 hex1: .asciz "0x"
-hex2: .asciz "h"
 .endif

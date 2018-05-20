@@ -105,7 +105,7 @@ register conventions:
 
 regdump_print:
 /*=============================================================================
-Dump register x0 in hex, format "0x[value]h"
+Dump register x0 in hex, format "0x[value]"
 register conventions:
 	x0 (input) register value
 	x1, x2 (temp)
@@ -119,7 +119,6 @@ register conventions:
         bl itoa
         ldr x0, =tmpstr
         bl fwrite
-        m_fputs hex2
 	m_callEpilogue
 	ret
 
