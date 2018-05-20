@@ -3,8 +3,6 @@
 // file: decode.s
 // Disassembler for 64 bit ARM (Aarch64)
 
-// Acknowledgements:
-
 .include "macros.s"
 .include "globals.s"
 .include "fcntl.s"
@@ -12,7 +10,6 @@
 
 .global decode
 .balign 4
-
 
 // based on an imm value, get absolute value (program counter + imm*4)
 // most often this is used for memory addressing, jumps etc
@@ -132,10 +129,6 @@ decode:
 		m_printregh x12
 		b endloop
 
-	next_byte:	// is this actually used anywhere?
-	add x11, x11, #1
-	b loop_operands
-
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
 	add x13, x13, opcode_s
 	ldr x10, =opcode_finish
@@ -151,8 +144,6 @@ decode:
 	m_fputs newline
 	m_callEpilogue
 	ret
-
-
 
 
 
@@ -180,17 +171,16 @@ mask_value:
 // from Table C3-1 A64 main encoding table
 
 // opcode struct
-// TODO: don't use padding (see decode())
-//.macro m_opcode opcode mnemonic operand1_type startbit1 operand2_type startbit2
 .macro m_opcode bitmask opcode mnemonic operand1_type startbit1 operand2_type startbit2
-	.word \bitmask
-	.int \opcode
+	.word \bitmask		// bits used by the opcode
+	.int \opcode		// values of bits in bitmask
 	.asciz "\mnemonic"
-	.byte \operand1_type
-	.byte \startbit1
-	.byte \operand2_type
+	.byte \operand1_type	// leftmost operand
+	.byte \startbit1	// startbit of the leftmost operand
+	.byte \operand2_type	// next operand..
 	.byte \startbit2
 .endm
+
 // operand types
 .equiv reg64, 0x10	// 64bit register, 5 bits of opcode
 .equiv codes_imm, imm12
@@ -211,7 +201,7 @@ unimplemented_str: .asciz "Unimplemented opcode"
 commaspace: .asciz ", "
 ascii_x: .asciz "x"
 
-opcode_start: // supportedopcodes are listed here
+opcode_start: // supported opcodes are listed here
 
 // First opcode gives us the size of the struct.
 opcodestruct_start:
@@ -224,36 +214,3 @@ m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0	// 3.2.6
 m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0	// 3.2.6
 m_opcode 0xF100001F, 0xF100001F,  "cmp ", reg64, 5, imm12_abs, 10 // 5.6.45. This is SUBZ, but alias to cmp. TODO: 32/64bit, shift
 opcode_finish:
-
-// THESE ALL ARE TO BE DELETED
-//.equiv C3_2a,	     0xA
-//.equiv C3_2b,	     0xB
-//.equiv C3_2_1, 0b011010
-//.equiv C3_2_2, 0b0101010
-//.equiv C3_2_4, 0b1101010100
-//.equiv C3_2_5, 0b011011
-//.equiv C3_2_6, 0b00101
-//.equiv C3_2_6a, 0b000101
-//.equiv C3_2_6b, 0b100101
-//.equiv C3_2_7, 0b1101011
-.equiv C3_3a,       0x4
-.equiv C3_3b,       0x6
-.equiv C3_3c,       0xC
-.equiv C3_3d,       0xE
-	.equiv C3_3_6, 0x8
-	.equiv C3_3_5a, 0x18
-	.equiv C3_3_5b, 0x1C
-.equiv C3_4a,       0x8
-.equiv C3_4b,       0x9
-.equiv C3_5a,       0x5
-.equiv C3_5b,       0x13
-// C 3.2 Branches, exception generating and system instructions
-.equiv C3_2,	0b0001010
-// C3.3 Loads and stores
-.equiv C3_3,	0b0000100
-// C3.4 Data processing - immediate
-.equiv C3_4,	0b0001000
-// C3.5 Data processing - register
-.equiv C3_5,	0b0000100
-// C3.6 Data processing - SIMD and floating point
-.equiv C3_6,	0b0001111
