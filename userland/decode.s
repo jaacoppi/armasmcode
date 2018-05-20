@@ -103,6 +103,11 @@ decode:
 		absrel_set:
 		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x11, x11, #1
+		try_imm9:
+		cmp x12, imm9
+			bne try_imm12
+			mov x10, 0x01FF // mask bits 0-8
+			b found_bits
 		try_imm12:
 		cmp x12, imm12
 			bne try_imm16
@@ -197,17 +202,21 @@ print_commaspace:
 	.byte \startbit1	// startbit of the leftmost operand
 	.byte \operand2_type	// next operand..
 	.byte \startbit2
+	.byte \operand3_type	// next operand..
+	.byte \startbit3
 .endm
 
 // operand types
 .equiv reg64, 0x10	// 64bit register, 5 bits of opcode
-.equiv codes_imm, imm12
-.equiv imm12, 0x20
-.equiv imm16, 0x21
-.equiv imm19, 0x22
-.equiv imm26, 0x23
-.equiv codes_imm_abs, imm12_abs
+.equiv codes_imm, imm9
+.equiv imm9, 0x20
+.equiv imm12, 0x21
+.equiv imm16, 0x22
+.equiv imm19, 0x23
+.equiv imm26, 0x24
+.equiv codes_imm_abs, imm9_abs
 .equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
+.equiv imm9_abs, imm9 + imm_abs // if more, use the immediate value as it is
 .equiv imm12_abs, imm12 + imm_abs // if more, use the immediate value as it is
 .equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
 .equiv imm19_abs, imm19 + imm_abs
