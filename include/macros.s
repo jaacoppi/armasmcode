@@ -16,8 +16,17 @@
 .macro m_pop reg
 	ldr \reg, [sp], #stack_align
 .endm
+
 // since it's difficult to remember that x30 is the link pointer
 // used for returning from subroutine calls
+// pushlink and poplink only target the link register
+// callPrologue and callEpilogue push more registers
+.macro m_pushlink
+	str x30, [sp, #-stack_align]!
+.endm
+.macro m_poplink
+	ldr x30, [sp], #stack_align
+.endm
 .macro m_callPrologue
 	str x9, [sp, #-stack_align]!
 	str x10, [sp, #-stack_align]!

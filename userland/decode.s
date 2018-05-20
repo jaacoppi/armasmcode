@@ -32,11 +32,11 @@ imm2rel:
 // x20 (input) = memory pointer
 // x9, x10, x11, x12 = temp
 // x13 = holds the starting address of an item in the opcode struct
-
+// x14 = 0 = don't print ", " before this operand, 1 = print it
 decode:
 	m_callPrologue
-
-	add x20, x20, 0x5 // reset memmory pointer
+	mov x14, #0	// reset boolean print_commaspace
+	add x20, x20, 0x5 // reset memmory pointer. TODO: should this be here or in disarm64.s?
 
 	// go through a series of switches to find the right opcode
 	// copy  bits 31-25 of x25 to x9
@@ -72,14 +72,18 @@ decode:
 	try_reg64:
 	cmp x12, reg64
 		bne try_imms
+
 		// next byte has the starting bit, mask it
 		add x11, x11, #1
 		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
 		bl mask_value
+
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
+		bl print_commaspace
+		mov x14, #1
 		m_fputs ascii_x
 		m_printregi x12
-		m_fputs commaspace
+
 		b loop_operands
 
 	try_imms:
@@ -116,7 +120,7 @@ decode:
 			b found_bits
 		try_imm26:
 		cmp x12, imm26
-			bne try_imm26
+			bne try_imm26	// TODO: fix this infinite loop
 			mov x10, 0x3FFFFFF // mask bits 0-25
 			b found_bits
 		found_bits:
@@ -126,6 +130,7 @@ decode:
 			bl imm2rel
 		imm2rel_ok:
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
+		bl print_commaspace
 		m_printregh x12
 		b endloop
 
@@ -166,6 +171,19 @@ mask_value:
 	ret // note we haven't pushed the link register..
 
 
+
+// print ", " if the previous operand requires it
+// basically, if it was a register
+// x14 = holds the value, 1 = print, 0 = don't print
+print_commaspace:
+	m_pushlink
+	cmp x14, #1	// print commaspace if needed
+		bne cont
+		mov x14, #0
+		m_fputs commaspace
+	cont:
+	m_poplink
+	ret
 
 // ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
 // from Table C3-1 A64 main encoding table
