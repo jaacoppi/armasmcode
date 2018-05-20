@@ -7,4 +7,5 @@
 .balign 4
 .text
 _start:
-ldr x5, 0x1234
+ldr x5, 0x100
+ldr x20, [sp], 0x40
