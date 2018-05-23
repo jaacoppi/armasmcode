@@ -90,17 +90,12 @@ decode:
 	cmp x12, codes_imm
 		blt endloop	// last known operand, end loop
 	cmp x12, codes_imm_abs	// set x15 whether or not to use imm2rel
-		bge set_absolute
-		blt set_relative
+	cset x15, ge	// #1 = absolute, #0 = relative
 
-			set_absolute: // the immediate is an absolute value. Don't use imm2rel
-				mov x15, #1
-				sub x12, x12, imm_abs	// convert so the rest of the logic finds these
-				b absrel_set
-			set_relative: //  the immediate is relative to current program counter. use imm2rel
-				mov x15, #0
-				b absrel_set
-		absrel_set:
+	cmp x15, #1	// if absolute, use x10 as temp to convert abs to rel so the rest of the logic finds them
+	sub x10, x12, imm_abs
+	csel x12, x10, x12, eq
+
 		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x11, x11, #1
 		try_imm9:
