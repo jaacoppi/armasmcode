@@ -72,16 +72,16 @@ decode:
 	cmp x12, #0	// no more operands
 		beq endloop
 
-	try_reg64_ptr:
-	cmp x12, reg64_ptr
-		bne try_reg64
-		// if this is a pointer, set x15 to boolean true and fall through to reg64
-		cset x15, eq
-		mov x12, reg64
-
+	try_registers:
+	cmp x12, reg32
+		bgt try_imms
+	parse_register:
+	and x15, x12, #3
+//	bit 0: 32bit(w) = 0, 64bit(x) = 1
+//	bit 1: not a pointer = 0 , pointer = 1
 	try_reg64:
-	cmp x12, reg64
-		bne try_imms
+//	cmp x12, reg64
+//		bne try_imms
 		// next byte has the starting bit, mask it
 		add x11, x11, #1
 		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
@@ -91,11 +91,19 @@ decode:
 		bl print_commaspace
 		mov x14, #1
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
+		and x9, x15, #2
+		cmp x9, #2
+			ldr x9, =ascii_x
+			ldr x10, =ascii_w
+			csel x9, x9, x10, ne
+		and x15, x15, #1
 		cmp x15, #1
 			bne reg_nonptr
 			beq reg_ptr
 			reg_nonptr:
-				m_fputs ascii_x
+				mov x0, x9
+				bl fputs
+//				m_fputs ascii_x
 				m_printregi x12
 				b loop_operands
 			reg_ptr:
@@ -115,6 +123,7 @@ decode:
 		b loop_operands
 
 	try_imms:
+// TODO: if post index offset is #0, don't show it
 	cmp x12, codes_imm
 		blt endloop	// last known operand, end loop
 	cmp x12, codes_imm_abs	// set x15 whether or not to use imm2rel
@@ -232,6 +241,7 @@ print_commaspace:
 // operand types
 .equiv reg64, 0x10	// 64bit register "x0", 5 bits of opcode
 .equiv reg64_ptr, 0x11	// 64bit register pointer "[x0]", 5 bits of opcode
+.equiv reg32, 0x12	// 32bit register "w0", 5 bits of opcode
 
 .equiv codes_imm, imm9
 .equiv imm9, 0x20
@@ -252,6 +262,7 @@ print_commaspace:
 unimplemented_str: .asciz "Unimplemented opcode"
 commaspace: .asciz ", "
 ascii_x: .asciz "x"
+ascii_w: .asciz "w"
 ascii_sp: .asciz "sp"
 ascii_squarebr_open: .asciz "["
 ascii_squarebr_close: .asciz "]"
@@ -265,7 +276,8 @@ opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
-m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate)
+m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
+m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
 m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 3.2.6
 m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 3.2.6
 m_opcode 0xF100001F, 0xF100001F,  "cmp ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBZ, but alias to cmp. TODO: 32/64bit, shift

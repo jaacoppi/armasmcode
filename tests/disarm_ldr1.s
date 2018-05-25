@@ -9,3 +9,5 @@
 _start:
 ldr x5, 0x100
 ldr x20, [sp], 0x40
+ldrb w17, [x29]
+
