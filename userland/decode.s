@@ -11,110 +11,89 @@
 .global decode
 .balign 4
 
-// based on an imm value, get absolute value (program counter + imm*4)
-// most often this is used for memory addressing, jumps etc
-// registers:
-// x21 = program counter
-// x12 (input) = immediate value
-// x12 (output) = relative value
-// x10 = temp
-imm2rel:
-	mov x10, #4
-	mul x12, x12, x10
-	add x12, x12, x21
-	ret
-
-
-
 // decode an opcode and print it
 // registers:
 // x25 (input) = opcode to be decoded
-// x20 (input) = memory pointer
-// x9, x10, x11, x12 = temp
-// x13 = holds the starting address of an item in the opcode struct
-// x14 = 0 = don't print ", " before this operand, 1 = print it
-// x15 = temp
+// x9 = index to array of opcode_s structs
+// x10 = index to struct opcode_s
+// x11: 0 = don't print ", " before this operand, 1 = print it
+// x12 = hold bitmask of registers
+//  x13, x14, x15  = temp
 decode:
 	m_callPrologue
-	mov x14, #0	// reset boolean print_commaspace
-	add x20, x20, 0x5 // reset memmory pointer. TODO: should this be here or in disarm64.s?
+	mov x11, #0	// reset boolean print_commaspace
 
 	// go through a series of switches to find the right opcode
-	// copy  bits 31-25 of x25 to x9
-	mov x9, #0
-	ubfx x9,x25, #24, #31
 
 	// loop known opcodes in x10, compare with current opcode
-	ldr x13, =opcode_start
+	ldr x9, =opcode_start
 	loop_opcodes:
 	// bitmask the relevant 32 bits
-	mov x11, x13
-	ldr x10, [x11]
-	mov w10, w10
-	and x9, x10, x25
+	mov x10, x9
+	ldr x14, [x10]
+	mov w14, w14
+	and x13, x14, x25
 	// compare to our table
-	add x11, x11, #4
-	ldr x10, [x11]
-	mov w10, w10
-	cmp x9, x10
+	add x10, x10, #4
+	ldr x14, [x10]
+	mov w14, w14
+	cmp x13, x14
 		bne loop_next_opcode
 	// Found a matching opcode
 	// print mnemonic
-	add x11, x11, #4 // TODO: is this assuming a 4 byte int size?)
-	mov x0, x11
+	add x10, x10, #4 // TODO: is this assuming a 4 byte int size?)
+	mov x0, x10
 	bl fputs
 	// find and print first operand and value
-	add x11, x11, #4
+	add x10, x10, #4
 	loop_operands:
-	mov x15, #0	// reset temp
-	add x11, x11, #1
-	ldrb w12, [x11]
-	cmp x12, #0	// no more operands
+	mov x12, #0	// reset temp
+	add x10, x10, #1
+	ldrb w15, [x10]
+	cmp x15, #0	// no more operands
 		beq endloop
 
 	try_registers:
-	cmp x12, reg32
+	cmp x15, reg32
 		bgt try_imms
 	parse_register:
-	and x15, x12, #3
-//	bit 0: 32bit(w) = 0, 64bit(x) = 1
-//	bit 1: not a pointer = 0 , pointer = 1
+	and x12, x15, #3	// the last nibble contains info about the register
+				//	bit 0: 32bit(w) = 0, 64bit(x) = 1
+				//	bit 1: not a pointer = 0 , pointer = 1
 	try_reg64:
-//	cmp x12, reg64
-//		bne try_imms
 		// next byte has the starting bit, mask it
-		add x11, x11, #1
-		mov x10, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
+		add x10, x10, #1
+		mov x14, 0x0000001F // mask bits 0-4, reg64 is always 5 bits (bits 0-4)
 		bl mask_value
 
 		// print ", " if needed
 		bl print_commaspace
-		mov x14, #1
+		mov x11, #1
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
-		and x9, x15, #2
-		cmp x9, #2
-			ldr x9, =ascii_x
-			ldr x10, =ascii_w
-			csel x9, x9, x10, ne
-		and x15, x15, #1
-		cmp x15, #1
+		and x13, x12, #2
+		cmp x13, #2
+			ldr x13, =ascii_x
+			ldr x14, =ascii_w
+			csel x13, x13, x14, ne
+		and x12, x12, #1
+		cmp x12, #1
 			bne reg_nonptr
 			beq reg_ptr
 			reg_nonptr:
-				mov x0, x9
+				mov x0, x13
 				bl fputs
 //				m_fputs ascii_x
-				m_printregi x12
+				m_printregi x15
 				b loop_operands
 			reg_ptr:
 				m_fputs ascii_squarebr_open
-				cmp x12, #31		// print sp instead of x31, otherwise use the numbers
+				cmp x15, #31		// print sp instead of x31, otherwise use the numbers
 					bne printreg
 					m_fputs ascii_sp
 					b cont2
 				printreg:
 				m_fputs ascii_x
-					m_printregi x12
+					m_printregi x15
 				cont2:
 				m_fputs ascii_squarebr_close
 
@@ -124,57 +103,61 @@ decode:
 
 	try_imms:
 // TODO: if post index offset is #0, don't show it
-	cmp x12, codes_imm
+	cmp x15, codes_imm
 		blt endloop	// last known operand, end loop
-	cmp x12, codes_imm_abs	// set x15 whether or not to use imm2rel
-	cset x15, ge	// #1 = absolute, #0 = relative
+	cmp x15, codes_imm_abs	// set x12 whether or not to use imm2rel
+	cset x12, ge	// #1 = absolute, #0 = relative
 
-	cmp x15, #1	// if absolute, use x10 as temp to convert abs to rel so the rest of the logic finds them
-	sub x10, x12, imm_abs
-	csel x12, x10, x12, eq
+	cmp x12, #1	// if absolute, use x10 as temp to convert abs to rel so the rest of the logic finds them
+	sub x14, x15, imm_abs
+	csel x15, x14, x15, eq
 
 		// next byte has the starting bit, mask it with amount of bits in immXX
-		add x11, x11, #1
+		add x10, x10, #1
 		try_imm9:
-		cmp x12, imm9
+		cmp x15, imm9
 			bne try_imm12
-			mov x10, 0x01FF // mask bits 0-8
+			mov x14, 0x01FF // mask bits 0-8
 			b found_bits
 		try_imm12:
-		cmp x12, imm12
+		cmp x15, imm12
 			bne try_imm16
-			mov x10, 0x0FFF // mask bits 0-11
+			mov x14, 0x0FFF // mask bits 0-11
 			b found_bits
 		try_imm16:
-		cmp x12, imm16
+		cmp x15, imm16
 			bne try_imm19
-			mov x10, 0xFFFF // mask bits 0-15
+			mov x14, 0xFFFF // mask bits 0-15
 			b found_bits
 		try_imm19:
-		cmp x12, imm19
+		cmp x15, imm19
 			bne try_imm26
-			mov x10, 0x0007FFFF // mask bits 0-18
+			mov x14, 0x0007FFFF // mask bits 0-18
 			b found_bits
 		try_imm26:
-		cmp x12, imm26
+		cmp x15, imm26
 			bne try_imm26	// TODO: fix this infinite loop
-			mov x10, 0x3FFFFFF // mask bits 0-25
+			mov x14, 0x3FFFFFF // mask bits 0-25
 			b found_bits
 		found_bits:
 		bl mask_value
-		cmp x15, #0
+		cmp x12, #0
 			bne imm2rel_ok
-			bl imm2rel
+			imm2rel:
+			// based on an imm value, get absolute value (program counter + imm*4)
+			// most often this is used for memory addressing, jumps etc
+			lsl x15, x15, #2	// lsl #2 equals x * 4
+			add x15, x15, x21	// x21 = program counter
 		imm2rel_ok:
 		// print the register value (currently assumes it's simply x. TODO: handle w and others
 		bl print_commaspace
-		m_printregh x12
+		m_printregh x15
 		b endloop
 
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
-	add x13, x13, opcode_s
-	ldr x10, =opcode_finish
-	cmp x10, x13
+	add x9, x9, opcode_s
+	ldr x14, =opcode_finish
+	cmp x14, x9
 		ble unimplemented
 	b loop_opcodes
 
@@ -189,34 +172,31 @@ decode:
 
 
 
-// mask a value starting at bit x11 with mask at x10
+// mask a value starting at bit x14 with mask at x10
 // note that this doesn't follow register conventions, supposed to be called inside decode()
-// x10 (input) = bitmask
-// x11 (input) = pointer to starting 64 bits
-// x11 (output) = value of 1st byte of the 64 bits
+// x10 (input) = pointer to starting 64 bits
+// x14 (input) = bitmask
 // x25 (input) = opcode
-// x12 (output) = value
-// x14 = temp, restored
+// x15 (output) = value
+// x13 = temp
 mask_value:
-	m_push x14
-	mov x12, x25 	// opcode to be masked
-	ldrb w14, [x11]  // starting bit
-	lsr x12, x12, x14 // move starting bit to be 0
-	and x12, x12, x10
+	mov x15, x25 	// opcode to be masked
+	ldrb w13, [x10]  // starting bit
+	lsr x15, x15, x13 // move starting bit to be 0
+	and x15, x15, x14
 
-	m_pop x14
 	ret // note we haven't pushed the link register..
 
 
 
 // print ", " if the previous operand requires it
 // basically, if it was a register
-// x14 = holds the value, 1 = print, 0 = don't print
+// x11 = holds the value, 1 = print, 0 = don't print
 print_commaspace:
 	m_pushlink
-	cmp x14, #1	// print commaspace if needed
+	cmp x11, #1	// print commaspace if needed
 		bne cont
-		mov x14, #0
+		mov x11, #0
 		m_fputs commaspace
 	cont:
 	m_poplink

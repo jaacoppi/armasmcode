@@ -202,6 +202,7 @@ register conventions:
 		cmp x24, #0
 			bne displayloop
 		bl decode
+	        add x20, x20, 0x5 // reset memmory pointer
 	       add x21, x21, 0x04 // increase iterator
 		b disassemble
 
