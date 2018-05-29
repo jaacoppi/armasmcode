@@ -10,4 +10,6 @@
 .text
 _start:
 b  0b11111111111111111111111100
+bgt next
+next:
 bl 0x4205F0

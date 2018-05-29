@@ -53,6 +53,20 @@ decode:
 	cmp x15, #0	// no more operands
 		beq endloop
 
+	cmp x15, cond	// conditional
+		bne try_registers
+		add x10, x10, #1
+		mov x14, 0x0000000F // mask bits 0-3
+		bl mask_value
+		// ascii value for condition is in =conditions + cond*3
+		mov x14, #3
+		mul x15, x15, x14
+		ldr x14, =conditions
+		add x0, x14, x15
+		bl fputs
+		ldr x0, =space
+		bl fputs
+		b loop_operands
 	try_registers:
 	cmp x15, reg32
 		bgt try_imms
@@ -172,7 +186,7 @@ decode:
 
 
 
-// mask a value starting at bit x14 with mask at x10
+// mask a value at x10 with bitmask in x14
 // note that this doesn't follow register conventions, supposed to be called inside decode()
 // x10 (input) = pointer to starting 64 bits
 // x14 (input) = bitmask
@@ -219,6 +233,8 @@ print_commaspace:
 .endm
 
 // operand types
+.equiv cond, 0x1	// conditional, 4 bits
+
 .equiv reg64, 0x10	// 64bit register "x0", 5 bits of opcode
 .equiv reg64_ptr, 0x11	// 64bit register pointer "[x0]", 5 bits of opcode
 .equiv reg32, 0x12	// 32bit register "w0", 5 bits of opcode
@@ -238,6 +254,25 @@ print_commaspace:
 .equiv imm26_abs, imm26 + imm_abs
 
 .data
+// C1.1 Condition table
+// 3-byte Null terminated strings, use conditions + value*3 to find out the correct offset
+conditions:
+.asciz "eq"
+.asciz "ne"
+.asciz "cs"
+.asciz "cc"
+.asciz "mi"
+.asciz "pl"
+.asciz "vs"
+.asciz "vc"
+.asciz "hi"
+.asciz "ls"
+.asciz "ge"
+.asciz "lt"
+.asciz "gt"
+.asciz "le"
+.asciz "al"
+
 // strings
 unimplemented_str: .asciz "Unimplemented opcode"
 commaspace: .asciz ", "
@@ -256,6 +291,7 @@ opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
+m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
 m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
 m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 3.2.6
