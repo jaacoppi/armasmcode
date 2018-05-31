@@ -145,7 +145,7 @@ elf.o: userland/elf.s $(HEADERS) userland/elf.o
 	$(AS) $(ASFLAGS) -o @ userland/elf.s
 
 ### tests
-check: build_hook disarm_ldr1.o disarm_bl1.o disarm_cmp.o
+check: build_hook disarm_ldr1.o disarm_bl1.o disarm_cmp.o disarm64
 	tests/opcodes.test
 	rm tests/actual.txt tests/expected.txt
 
