@@ -7,5 +7,6 @@
 .balign 4
 .text
 _start:
-cmp x28, 0xFF
+cmp x28, 0xFF		// 5.6.45, 64 bit
+cmp w9, 0xAA		// 5.6.45, 32 bit
 cmp x10, 0xFFFFFFFFFFFFFFFD 	// -3, changes cmp disassembly to cmn
