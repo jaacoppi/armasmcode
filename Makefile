@@ -145,7 +145,7 @@ elf.o: userland/elf.s $(HEADERS) userland/elf.o
 	$(AS) $(ASFLAGS) -o @ userland/elf.s
 
 ### tests
-check: build_hook disarm_ldr1.o disarm_bl1.o disarm_cmp.o disarm64
+check: build_hook disarm_ldr1.o disarm_bl1.o disarm_cmp.o disarm_mov.o disarm64
 	tests/opcodes.test
 	rm tests/actual.txt tests/expected.txt
 
@@ -160,6 +160,11 @@ disarm_bl1.o: tests/disarm_bl1.s
 disarm_cmp.o: tests/disarm_cmp.s
 	$(AS) $(ASFLAGS) -o tests/disarm_cmp.o tests/disarm_cmp.s
 	$(LD) -o tests/bin/disarm_cmp tests/disarm_cmp.o
+
+disarm_mov.o: tests/disarm_mov.s
+	$(AS) $(ASFLAGS) -o tests/disarm_mov.o tests/disarm_mov.s
+	$(LD) -o tests/bin/disarm_mov tests/disarm_mov.o
+
 
 ####### Install
 
