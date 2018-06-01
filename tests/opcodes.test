@@ -42,5 +42,5 @@ test_opcode() {
 
 test_opcode disarm_ldr1 0f3c2c5a392942e04713e1c90fbe915355a468e0
 test_opcode disarm_bl1 f21afd28a9dd74fc09ff5c46bb86c207ce9894c5
-test_opcode disarm_cmp d5e748a9f88ed62cce8794095cba75e3eb9a878e
+test_opcode disarm_cmp 75a643dc8b5986ac19de64b0975f706c8607e883
 test_opcode disarm_mov fdc7db1dbff477468331ae7eb50f12283d6f2a66
