@@ -291,6 +291,7 @@ opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
+m_opcode 0xFF000000, 0x10000000,  "adr ", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR. TODO: recognise immhi:immlo instead of imm19
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
 m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
 m_opcode 0xFFC00400, 0xF9400000,  "ldr ", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
