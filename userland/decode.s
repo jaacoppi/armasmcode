@@ -293,6 +293,7 @@ opcodestruct_finish:
 // rest of opcodes
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
 m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
+m_opcode 0xFFC00400, 0xF9400000,  "ldr ", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
 m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 3.2.6
 m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 3.2.6
