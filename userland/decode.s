@@ -302,6 +302,7 @@ m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 3.2.6
 m_opcode 0xFF00001F, 0xB100001F,  "cmn ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
 m_opcode 0xF100001F, 0x7100001F,  "cmp ", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
 m_opcode 0xF100001F, 0xF100001F,  "cmp ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFFE0FC00, 0x9B007C00,  "mul ", reg64, 0, reg64, 5, reg64, 16 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov ", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFF0003E0, 0xAA0003E0,  "mov ", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
 opcode_finish:
