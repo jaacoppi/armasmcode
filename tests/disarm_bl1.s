@@ -11,5 +11,7 @@
 _start:
 b  0b11111111111111111111111100
 bgt next
+ble _start	// B.cond to a negative value
 next:
 bl 0x4205F0
+bl next

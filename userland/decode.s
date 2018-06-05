@@ -116,18 +116,27 @@ decode:
 		b loop_operands
 
 	try_imms:
-// TODO: if post index offset is #0, don't show it
+	// Immediates can be signed or unsigned, relative or absolute. Find the proper value.
 	cmp x15, codes_imm
 		blt endloop	// last known operand, end loop
-	cmp x15, codes_imm_abs	// set x12 whether or not to use imm2rel
+
+	// set x12 whether or not to use imm2rel
+	rel_or_abs:
+	cmp x15, codes_imm_abs
 	cset x12, ge	// #1 = absolute, #0 = relative
 
-	cmp x12, #1	// if absolute, use x10 as temp to convert abs to rel so the rest of the logic finds them
+	// convert x15 from immX_abs to imm so the rest of the logic finds them
+	cmp x12, #1
 	sub x14, x15, imm_abs
 	csel x15, x14, x15, eq
 
 		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x10, x10, #1
+		try_simm9:
+		cmp x15, simm9
+			bne try_imm9
+			mov x14, 0x01FF // mask bits 0-8
+			b found_bits
 		try_imm9:
 		cmp x15, imm9
 			bne try_imm12
@@ -154,7 +163,28 @@ decode:
 			mov x14, 0x3FFFFFF // mask bits 0-25
 			b found_bits
 		found_bits:
+		m_push x15	// TODO: better register usage to avoid push/pop
+
+		// print the register value
 		bl mask_value
+
+		bl print_commaspace
+
+		// handle negative absolute values (relatives don't need special treatment:
+		// if type is simm9 and value gt 0x100 it's a negative in two's complement
+		// if negative, xor with 1FF and add 1 to get the absolute value
+		m_pop x14 // pop what used to be in x15 - operand byte from opcode_s
+		cmp x14, simm9	// TODO: this would handle relatives also since _abs is stripped earlier
+			bne unsigned
+			cmp x15, 0x100
+				ble unsigned
+				eor x15, x15, 0x1FF	// remember, xor is eor (exclusive or) in arm
+				add x15, x15, #1
+				m_fputs ascii_minus
+
+				m_fputs ascii_minus
+
+		unsigned: // the sign has been dealt with, print the value
 		cmp x12, #0
 			bne imm2rel_ok
 			imm2rel:
@@ -163,10 +193,10 @@ decode:
 			lsl x15, x15, #2	// lsl #2 equals x * 4
 			add x15, x15, x21	// x21 = program counter
 		imm2rel_ok:
-		// print the register value (currently assumes it's simply x. TODO: handle w and others
-		bl print_commaspace
+		// TODO: if post index offset is #0, don't show it
 		m_printregh x15
 		b endloop
+		b exit
 
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
 	add x9, x9, opcode_s
@@ -198,9 +228,7 @@ mask_value:
 	ldrb w13, [x10]  // starting bit
 	lsr x15, x15, x13 // move starting bit to be 0
 	and x15, x15, x14
-
 	ret // note we haven't pushed the link register..
-
 
 
 // print ", " if the previous operand requires it
@@ -245,6 +273,7 @@ print_commaspace:
 .equiv imm16, 0x22
 .equiv imm19, 0x23
 .equiv imm26, 0x24
+.equiv simm9, 0x25
 .equiv codes_imm_abs, imm9_abs
 .equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
 .equiv imm9_abs, imm9 + imm_abs // if more, use the immediate value as it is
@@ -252,6 +281,7 @@ print_commaspace:
 .equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
 .equiv imm19_abs, imm19 + imm_abs
 .equiv imm26_abs, imm26 + imm_abs
+.equiv simm9_abs, simm9 + imm_abs
 
 .data
 // C1.1 Condition table
@@ -276,6 +306,7 @@ conditions:
 // strings
 unimplemented_str: .asciz "Unimplemented opcode"
 commaspace: .asciz ", "
+ascii_minus: .asciz "-"
 ascii_x: .asciz "x"
 ascii_w: .asciz "w"
 ascii_sp: .asciz "sp"
@@ -292,13 +323,20 @@ opcodestruct_finish:
 
 // rest of opcodes
 m_opcode 0xFFE00000, 0x8B000000,  "add ", reg64, 0, reg64, 5, reg64, 16	// 5.6.5 ADD (shifted register). TODO: shift
-m_opcode 0xFF000000, 0x10000000,  "adr ", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR. TODO: recognise immhi:immlo instead of imm19
+m_opcode 0xFF000000, 0x10000000,  "adr ", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
+m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 5.6.20
+m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 5.6.26
+
+m_opcode 0xFFE00C00, 0xF8000C00,  "str ", reg64, 0, reg64_ptr, 5, simm9_abs, 12	// 5.6.83 LDR (immediate), pre index variant
+// TODO:
+//[ptr, #offset] instead of [ptr], offset
+//eclamation ! at the end (what's the meaning, anyways?)
+
+
 m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
 m_opcode 0xFFC00400, 0xF9400000,  "ldr ", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
-m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 3.2.6
-m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 3.2.6
 m_opcode 0xFF00001F, 0xB100001F,  "cmn ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
 m_opcode 0xF100001F, 0x7100001F,  "cmp ", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
 m_opcode 0xF100001F, 0xF100001F,  "cmp ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
