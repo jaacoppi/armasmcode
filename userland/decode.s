@@ -41,12 +41,17 @@ decode:
 	cmp x13, x14
 		bne loop_next_opcode
 	// Found a matching opcode
-	// print mnemonic
-	add x10, x10, #4 // TODO: is this assuming a 4 byte int size?)
+	// print mnemonic followed by a space (unless this is a conditional)
+	add x10, x10, #4
 	mov x0, x10
 	bl fputs
-	// find and print first operand and value
-	add x10, x10, #4
+	add x10, x10, #4	// advance pointer to the last char of the mnenomic
+
+	add x12, x10, #1	// take a peek at the next byte. If it's a conditional, don't print a space
+	ldrb w12, [x12]
+	cmp x12, cond
+		beq loop_operands
+		m_fputs space
 	loop_operands:
 	mov x12, #0	// reset temp
 	add x10, x10, #1
@@ -349,25 +354,25 @@ opcode_start: // supported opcodes are listed here
 
 // First opcode gives us the size of the struct.
 opcodestruct_start:
-m_opcode 0xFF000000, 0x58000000,  "ldr ", reg64, 0, imm19, 5, 0, 0	//3.3.5 Load register (literal)
+m_opcode 0xFF000000, 0x58000000,  "ldr\0", reg64, 0, imm19, 5, 0, 0	//3.3.5 Load register (literal)
 opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
-m_opcode 0xFFE00000, 0x8B000000,  "add ", reg64, 0, reg64, 5, reg64, 16	// 5.6.5 ADD (shifted register). TODO: shift
-m_opcode 0xFF000000, 0x10000000,  "adr ", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR
+m_opcode 0xFFE00000, 0x8B000000,  "add\0", reg64, 0, reg64, 5, reg64, 16	// 5.6.5 ADD (shifted register). TODO: shift
+m_opcode 0xFF000000, 0x10000000,  "adr\0", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
-m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 5.6.20
-m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 5.6.26
-m_opcode 0xFFE00C00, 0xF8000C00,  "str ", reg64, 0, reg64_preptr, 5, simm9_abs, 12 // 5.6.178 STR, store register, immediate offset, pre-index
-m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
-m_opcode 0xFFC00400, 0xF9400000,  "ldr ", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
+m_opcode 0xFC000000, 0x14000000,  "b\0\0\0", imm26, 0, 0, 0, 0, 0	// 5.6.20
+m_opcode 0xFC000000, 0x94000000,  "bl\0\0", imm26, 0, 0, 0, 0, 0	// 5.6.26
+m_opcode 0xFFE00C00, 0xF8000C00,  "str\0", reg64, 0, reg64_preptr, 5, simm9_abs, 12 // 5.6.178 STR, store register, immediate offset, pre-index
+m_opcode 0xFFE00400, 0xF8400400,  "ldr\0", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
+m_opcode 0xFFC00400, 0xF9400000,  "ldr\0", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
-m_opcode 0xFF00001F, 0xB100001F,  "cmn ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
-m_opcode 0xF100001F, 0x7100001F,  "cmp ", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
-m_opcode 0xF100001F, 0xF100001F,  "cmp ", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
-m_opcode 0xFF00001F, 0xEB00001F,  "cmp ", reg64, 5, reg64, 16, 0, 0 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
-m_opcode 0xFFE0FC00, 0x9B007C00,  "mul ", reg64, 0, reg64, 5, reg64, 16 	// 5.6.119. This is MADD, but alias to muk.
-m_opcode 0xFFE00000, 0xD2800000,  "mov ", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
-m_opcode 0xFF0003E0, 0xAA0003E0,  "mov ", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
+m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
+m_opcode 0xF100001F, 0xF100001F,  "cmp\0", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16 	// 5.6.119. This is MADD, but alias to muk.
+m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
 opcode_finish:
