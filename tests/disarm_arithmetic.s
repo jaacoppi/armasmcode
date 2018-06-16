@@ -7,5 +7,6 @@
 .balign 4
 .text
 _start:
+add x20, x30, #128	// 5.6.5 ADD (immediate)
 add x11, x21, x0	// 5.6.5 ADD (shifted register)
 mul x0, x11, x21	// 5.6.119 MADD, alias mul
