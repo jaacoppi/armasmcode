@@ -14,6 +14,7 @@ ldr x10, [x20]		// 5.6.83, immediate offset, 64 bit
 ldr w10, [x20]		// 5.6.83, immediate offset, 32bit
 ldrb w17, [x29]
 ldrb w1, [x17], -0x20
+strb w10, [x1]		// 5.6.180, STRB (immediate). This is an offset variant, currently doesn't handle offsets
 adr x29, 4	// byte align 4
 address:
 
