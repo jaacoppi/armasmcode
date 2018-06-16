@@ -370,7 +370,6 @@ m_opcode 0xFFE00400, 0xF8400400,  "ldr\0", reg64, 0, reg64_ptr, 5, imm9_abs, 12	
 m_opcode 0xFFC00400, 0xF9400000,  "ldr\0", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant
 m_opcode 0xFFC00400, 0xB9400000,  "ldr\0", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset, 32bit
 m_opcode 0xFFE00C00, 0x38400400,  "ldrb", reg32, 0, reg64_ptr, 5, simm9_abs, 12	// 5.6.86 LDRB (immediate), post index variant
-m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
 m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
 m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
@@ -379,4 +378,7 @@ m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0 // 5.6.46. 
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
+m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10	// 5.6.195 SUB (immediate)
+
 opcode_finish:
