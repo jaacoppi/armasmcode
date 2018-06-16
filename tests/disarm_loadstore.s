@@ -13,6 +13,7 @@ ldr x20, [sp], 0x40	// 5.6.83, post index variant
 ldr x10, [x20]		// 5.6.83, immediate offset, 64 bit
 ldr w10, [x20]		// 5.6.83, immediate offset, 32bit
 ldrb w17, [x29]
+ldrb w1, [x17], -0x20
 adr x29, 4	// byte align 4
 address:
 
