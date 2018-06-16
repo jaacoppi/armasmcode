@@ -7,6 +7,7 @@
 .balign 4
 .text
 _start:
+str x30, [sp, -0x8]!	// 5.7.178 Preindexed store
 ldr x5, 0x100
 ldr x20, [sp], 0x40	// 5.6.83, post index variant
 ldr x10, [x20]		// 5.6.83, immediate offset variant. TODO: offset [x20, offset]

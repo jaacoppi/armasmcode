@@ -1,7 +1,7 @@
 // aarch64 (ARM 64bit) assembly code for GNU as assembler
 //
 // file: decode.s
-// Disassembler for 64 bit ARM (Aarch64)
+// Disassembler for 64 bit ARM (ARMv8 / Aarch64)
 
 .include "macros.s"
 .include "globals.s"
@@ -19,11 +19,12 @@
 // x11: 0 = don't print ", " before this operand, 1 = print it
 // x12 = hold bitmask of registers
 //  x13, x14, x15  = temp
+// x16 = pre index mode on/off (print [x0, #imm] instead of [x0], #imm
 decode:
 	m_callPrologue
+	m_push x16
+	mov x16, #0
 	mov x11, #0	// reset boolean print_commaspace
-
-	// go through a series of switches to find the right opcode
 
 	// loop known opcodes in x10, compare with current opcode
 	ldr x9, =opcode_start
@@ -68,12 +69,13 @@ decode:
 		bl fputs
 		b loop_operands
 	try_registers:
-	cmp x15, reg32
+	cmp x15, reg64_preptr
 		bgt try_imms
 	parse_register:
-	and x12, x15, #3	// the last nibble contains info about the register
+	and x12, x15, 0b111	// the last nibble contains info about the register
 				//	bit 0: 32bit(w) = 0, 64bit(x) = 1
 				//	bit 1: not a pointer = 0 , pointer = 1
+				//	bit 2: pre index
 	try_reg64:
 		// next byte has the starting bit, mask it
 		add x10, x10, #1
@@ -83,34 +85,56 @@ decode:
 		// print ", " if needed
 		bl print_commaspace
 		mov x11, #1
-		// print the register value (currently assumes it's simply x. TODO: handle w and others
+
+		// process the bitmap and print the register value
+		// bit 2 stores pre index variant
+		and x13, x12, #4
+		mov x14, #0
+		cmp x13, #4
+		cset x14, eq
+		m_push x14	// push x14 boolean
+
 		and x13, x12, #2
-		cmp x13, #2
+		cmp x13, #2	// bit 1 stores w/x
 			ldr x13, =ascii_x
 			ldr x14, =ascii_w
 			csel x13, x13, x14, ne
-		and x12, x12, #1
+		and x12, x12, #1 // bit 0 stores ptr/nonptr
 		cmp x12, #1
 			bne reg_nonptr
 			beq reg_ptr
-			reg_nonptr:
+			reg_nonptr:	// normal register, just print
 				mov x0, x13
 				bl fputs
-//				m_fputs ascii_x
 				m_printregi x15
+				m_pop x14	// not needed, pop to keep stack in order
 				b loop_operands
 			reg_ptr:
 				m_fputs ascii_squarebr_open
 				cmp x15, #31		// print sp instead of x31, otherwise use the numbers
 					bne printreg
 					m_fputs ascii_sp
-					b cont2
+					b check_preindex
 				printreg:
 				m_fputs ascii_x
-					m_printregi x15
-				cont2:
-				m_fputs ascii_squarebr_close
+				m_printregi x15
 
+			check_preindex:
+			// if this is a preindexed version, print the value first, close bracket later
+			m_pop x14
+			cmp x14, #1
+				bne no_preindex
+				mov x16, #1
+				b loop_operands
+			// for preindexed registers, set boolean x16
+			// if next operand is immediate (it should be), it prints the value  and returns to yes_preindex, resetting x16
+			yes_preindex:
+				m_fputs ascii_squarebr_close
+				m_fputs ascii_exclamation
+				mov x16, #0
+				b loop_operands
+			no_preindex:	// exit as normal
+				m_fputs ascii_squarebr_close
 				b loop_operands
 
 		b loop_operands
@@ -182,8 +206,6 @@ decode:
 				add x15, x15, #1
 				m_fputs ascii_minus
 
-				m_fputs ascii_minus
-
 		unsigned: // the sign has been dealt with, print the value
 		cmp x12, #0
 			bne imm2rel_ok
@@ -193,10 +215,13 @@ decode:
 			lsl x15, x15, #2	// lsl #2 equals x * 4
 			add x15, x15, x21	// x21 = program counter
 		imm2rel_ok:
-		// TODO: if post index offset is #0, don't show it
 		m_printregh x15
-		b endloop
-		b exit
+
+		// x16 holds the preindex setting
+		cmp x16, #1
+		beq yes_preindex
+
+		b endloop	// TODO: why is this here?
 
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
 	add x9, x9, opcode_s
@@ -211,6 +236,7 @@ decode:
 
 	endloop:
 	m_fputs newline
+	m_pop x16
 	m_callEpilogue
 	ret
 
@@ -263,9 +289,14 @@ print_commaspace:
 // operand types
 .equiv cond, 0x1	// conditional, 4 bits
 
+// pointer bitmap:
+// b1 = regular vs pointer
+// b10 = 32 vs 64
+// b100 = pre index
 .equiv reg64, 0x10	// 64bit register "x0", 5 bits of opcode
 .equiv reg64_ptr, 0x11	// 64bit register pointer "[x0]", 5 bits of opcode
 .equiv reg32, 0x12	// 32bit register "w0", 5 bits of opcode
+.equiv reg64_preptr, 0x15	// 64bit register pointer "[x0]", 5 bits of opcode
 
 .equiv codes_imm, imm9
 .equiv imm9, 0x20
@@ -307,6 +338,7 @@ conditions:
 unimplemented_str: .asciz "Unimplemented opcode"
 commaspace: .asciz ", "
 ascii_minus: .asciz "-"
+ascii_exclamation: .asciz "!"
 ascii_x: .asciz "x"
 ascii_w: .asciz "w"
 ascii_sp: .asciz "sp"
@@ -327,13 +359,7 @@ m_opcode 0xFF000000, 0x10000000,  "adr ", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
 m_opcode 0xFC000000, 0x14000000,  "b   ", imm26, 0, 0, 0, 0, 0	// 5.6.20
 m_opcode 0xFC000000, 0x94000000,  "bl  ", imm26, 0, 0, 0, 0, 0	// 5.6.26
-
-m_opcode 0xFFE00C00, 0xF8000C00,  "str ", reg64, 0, reg64_ptr, 5, simm9_abs, 12	// 5.6.83 LDR (immediate), pre index variant
-// TODO:
-//[ptr, #offset] instead of [ptr], offset
-//eclamation ! at the end (what's the meaning, anyways?)
-
-
+m_opcode 0xFFE00C00, 0xF8000C00,  "str ", reg64, 0, reg64_preptr, 5, simm9_abs, 12 // 5.6.178 STR, store register, immediate offset, pre-index
 m_opcode 0xFFE00400, 0xF8400400,  "ldr ", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
 m_opcode 0xFFC00400, 0xF9400000,  "ldr ", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
