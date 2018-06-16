@@ -366,7 +366,8 @@ m_opcode 0xFC000000, 0x14000000,  "b\0\0\0", imm26, 0, 0, 0, 0, 0	// 5.6.20
 m_opcode 0xFC000000, 0x94000000,  "bl\0\0", imm26, 0, 0, 0, 0, 0	// 5.6.26
 m_opcode 0xFFE00C00, 0xF8000C00,  "str\0", reg64, 0, reg64_preptr, 5, simm9_abs, 12 // 5.6.178 STR, store register, immediate offset, pre-index
 m_opcode 0xFFE00400, 0xF8400400,  "ldr\0", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
-m_opcode 0xFFC00400, 0xF9400000,  "ldr\0", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant. TODO: offset like "ldr x0, [x1, offset]"
+m_opcode 0xFFC00400, 0xF9400000,  "ldr\0", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant
+m_opcode 0xFFC00400, 0xB9400000,  "ldr\0", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset, 32bit
 m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
 m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
 m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
