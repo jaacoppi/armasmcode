@@ -74,7 +74,7 @@ decode:
 		bl fputs
 		b loop_operands
 	try_registers:
-	cmp x15, reg64_preptr
+	cmp x15, last_register
 		bgt try_imms
 	parse_register:
 	and x12, x15, 0b111	// the last nibble contains info about the register
@@ -146,8 +146,8 @@ decode:
 
 	try_imms:
 	// Immediates can be signed or unsigned, relative or absolute. Find the proper value.
-	cmp x15, codes_imm
-		blt endloop	// last known operand, end loop
+	cmp x15, last_imm
+		bgt try_unalloc
 
 	// set x12 whether or not to use imm2rel
 	rel_or_abs:
@@ -228,6 +228,12 @@ decode:
 
 		b endloop	// TODO: why is this here?
 
+	try_unalloc:
+	cmp x15, unallocated
+		bne endloop	// last known opcode
+		m_fputs unallocated_str
+		b endloop
+
 	loop_next_opcode: // compare to next opcode if we haven't loop them all yet
 	add x9, x9, opcode_s
 	ldr x14, =opcode_finish
@@ -302,8 +308,8 @@ print_commaspace:
 .equiv reg64_ptr, 0x11	// 64bit register pointer "[x0]", 5 bits of opcode
 .equiv reg32, 0x12	// 32bit register "w0", 5 bits of opcode
 .equiv reg64_preptr, 0x15	// 64bit register pointer "[x0]", 5 bits of opcode
+.equiv last_register, reg64_preptr 	// for loop/switch control
 
-.equiv codes_imm, imm9
 .equiv imm9, 0x20
 .equiv imm12, 0x21
 .equiv imm16, 0x22
@@ -318,6 +324,8 @@ print_commaspace:
 .equiv imm19_abs, imm19 + imm_abs
 .equiv imm26_abs, imm26 + imm_abs
 .equiv simm9_abs, simm9 + imm_abs
+.equiv last_imm, simm9_abs	// for loop/switch control
+.equiv unallocated, 0x40
 
 .data
 // C1.1 Condition table
@@ -341,6 +349,7 @@ conditions:
 
 // strings
 unimplemented_str: .asciz "Unimplemented opcode"
+unallocated_str: .asciz "Unallocated opcode"
 commaspace: .asciz ", "
 ascii_minus: .asciz "-"
 ascii_exclamation: .asciz "!"
@@ -380,5 +389,5 @@ m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.
 m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
 m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10	// 5.6.195 SUB (immediate)
-
+m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
 opcode_finish:
