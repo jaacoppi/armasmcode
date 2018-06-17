@@ -145,7 +145,7 @@ elf.o: userland/elf.s $(HEADERS) userland/elf.o
 	$(AS) $(ASFLAGS) -o @ userland/elf.s
 
 ### tests
-check: build_hook disarm_loadstore.o disarm_bl1.o disarm_cmp.o disarm_mov.o disarm_arithmetic.o disarm64
+check: build_hook disarm_loadstore.o disarm_branches.o disarm_cmp.o disarm_mov.o disarm_arithmetic.o disarm64
 	tests/opcodes.test
 	rm tests/actual.txt tests/expected.txt
 
@@ -153,9 +153,9 @@ disarm_loadstore.o: tests/disarm_loadstore.s
 	$(AS) $(ASFLAGS) -o tests/disarm_loadstore.o tests/disarm_loadstore.s
 	$(LD) -o tests/bin/disarm_loadstore tests/disarm_loadstore.o
 
-disarm_bl1.o: tests/disarm_bl1.s
-	$(AS) $(ASFLAGS) -o tests/disarm_bl1.o tests/disarm_bl1.s
-	$(LD) -o tests/bin/disarm_bl1 tests/disarm_bl1.o
+disarm_branches.o: tests/disarm_branches.s
+	$(AS) $(ASFLAGS) -o tests/disarm_branches.o tests/disarm_branches.s
+	$(LD) -o tests/bin/disarm_branches tests/disarm_branches.o
 
 disarm_cmp.o: tests/disarm_cmp.s
 	$(AS) $(ASFLAGS) -o tests/disarm_cmp.o tests/disarm_cmp.s

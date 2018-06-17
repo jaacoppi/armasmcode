@@ -387,6 +387,7 @@ m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0 // 5.6.46. 
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xD65F03C0, 0xD65F03C0,  "ret\0", 0, 0, 0, 0, 0, 0 	// 5.6.148. RET. This only handles x30 as the return address
 m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
 m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10	// 5.6.195 SUB (immediate)
 m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table

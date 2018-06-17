@@ -15,3 +15,4 @@ ble _start	// B.cond to a negative value
 next:
 bl 0x4205F0
 bl next
+ret		// C5.6.148, return to address held in x30 (default)
