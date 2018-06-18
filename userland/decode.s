@@ -281,52 +281,6 @@ print_commaspace:
 	m_poplink
 	ret
 
-// ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
-// from Table C3-1 A64 main encoding table
-
-// opcode struct
-.macro m_opcode bitmask opcode mnemonic operand1_type startbit1 operand2_type startbit2 operand3_type startbit3
-	.word \bitmask		// bits used by the opcode
-	.int \opcode		// values of bits in bitmask
-	.asciz "\mnemonic"
-	.byte \operand1_type	// leftmost operand
-	.byte \startbit1	// startbit of the leftmost operand
-	.byte \operand2_type	// next operand..
-	.byte \startbit2
-	.byte \operand3_type	// next operand..
-	.byte \startbit3
-.endm
-
-// operand types
-.equiv cond, 0x1	// conditional, 4 bits
-
-// pointer bitmap:
-// b1 = regular vs pointer
-// b10 = 32 vs 64
-// b100 = pre index
-.equiv reg64, 0x10	// 64bit register "x0", 5 bits of opcode
-.equiv reg64_ptr, 0x11	// 64bit register pointer "[x0]", 5 bits of opcode
-.equiv reg32, 0x12	// 32bit register "w0", 5 bits of opcode
-.equiv reg64_preptr, 0x15	// 64bit register pointer "[x0]", 5 bits of opcode
-.equiv last_register, reg64_preptr 	// for loop/switch control
-
-.equiv imm9, 0x20
-.equiv imm12, 0x21
-.equiv imm16, 0x22
-.equiv imm19, 0x23
-.equiv imm26, 0x24
-.equiv simm9, 0x25
-.equiv codes_imm_abs, imm9_abs
-.equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
-.equiv imm9_abs, imm9 + imm_abs // if more, use the immediate value as it is
-.equiv imm12_abs, imm12 + imm_abs // if more, use the immediate value as it is
-.equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
-.equiv imm19_abs, imm19 + imm_abs
-.equiv imm26_abs, imm26 + imm_abs
-.equiv simm9_abs, simm9 + imm_abs
-.equiv last_imm, simm9_abs	// for loop/switch control
-.equiv unallocated, 0x40
-
 .data
 // C1.1 Condition table
 // 3-byte Null terminated strings, use conditions + value*3 to find out the correct offset
@@ -359,37 +313,90 @@ ascii_sp: .asciz "sp"
 ascii_squarebr_open: .asciz "["
 ascii_squarebr_close: .asciz "]"
 
+
+// operand types
+.equiv cond, 0x1	// conditional, 4 bits
+
+// pointer bitmap:
+// b1 = regular vs pointer
+// b10 = 32 vs 64
+// b100 = pre index
+.equiv reg64, 0x10	// 64bit register "x0", 5 bits of opcode
+.equiv reg64_ptr, 0x11	// 64bit register pointer "[x0]", 5 bits of opcode
+.equiv reg32, 0x12	// 32bit register "w0", 5 bits of opcode
+.equiv reg64_preptr, 0x15	// 64bit register pointer "[x0]", 5 bits of opcode
+.equiv last_register, reg64_preptr 	// for loop/switch control
+
+.equiv imm9, 0x20
+.equiv imm12, 0x21
+.equiv imm16, 0x22
+.equiv imm19, 0x23
+.equiv imm26, 0x24
+.equiv simm9, 0x25
+.equiv codes_imm_abs, imm9_abs
+.equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
+.equiv imm9_abs, imm9 + imm_abs // if more, use the immediate value as it is
+.equiv imm12_abs, imm12 + imm_abs // if more, use the immediate value as it is
+.equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
+.equiv imm19_abs, imm19 + imm_abs
+.equiv imm26_abs, imm26 + imm_abs
+.equiv simm9_abs, simm9 + imm_abs
+.equiv last_imm, simm9_abs	// for loop/switch control
+.equiv unallocated, 0x40
+
+
+
+// ARMV8-A Architecture reference manual, chapter C3 Instruction set encoding
+// from Table C3-1 A64 main encoding table
+// opcode struct
+.macro m_opcode bitmask opcode mnemonic operand1_type startbit1 operand2_type startbit2 operand3_type startbit3 operand4_type startbit4
+	.word \bitmask		// bits used by the opcode
+	.int \opcode		// values of bits in bitmask
+	.asciz "\mnemonic"
+	.byte \operand1_type	// leftmost operand
+	.byte \startbit1	// startbit of the leftmost operand
+	.byte \operand2_type	// next operand..
+	.byte \startbit2
+	.byte \operand3_type	// next operand..
+	.byte \startbit3
+	.byte \operand4_type	// next operand..
+	.byte \startbit4
+.endm
+
+
+
 opcode_start: // supported opcodes are listed here
 
 // First opcode gives us the size of the struct.
 opcodestruct_start:
-m_opcode 0xFF000000, 0x58000000,  "ldr\0", reg64, 0, imm19, 5, 0, 0	//3.3.5 Load register (literal)
+m_opcode 0xFF000000, 0x58000000,  "ldr\0", reg64, 0, imm19, 5, 0, 0, 0, 0	//3.3.5 Load register (literal)
 opcodestruct_finish:
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
-m_opcode 0xFFE00000, 0x91000000,  "add\0", reg64, 0, reg64, 5, imm12_abs, 10	// 5.6.5 ADD (immediate)
-m_opcode 0xFFE00000, 0x8B000000,  "add\0", reg64, 0, reg64, 5, reg64, 16	// 5.6.5 ADD (shifted register). TODO: shift
-m_opcode 0xFF000000, 0x10000000,  "adr\0", reg64, 0, imm19, 5,0, 0	// 5.6.9 ADR
-m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0	// 5.6.19 B.cond
-m_opcode 0xFC000000, 0x14000000,  "b\0\0\0", imm26, 0, 0, 0, 0, 0	// 5.6.20
-m_opcode 0xFC000000, 0x94000000,  "bl\0\0", imm26, 0, 0, 0, 0, 0	// 5.6.26
-m_opcode 0xFFE00C00, 0xF8000C00,  "str\0", reg64, 0, reg64_preptr, 5, simm9_abs, 12 // 5.6.178 STR, store register, immediate offset, pre-index
-m_opcode 0xFFE00400, 0xF8400400,  "ldr\0", reg64, 0, reg64_ptr, 5, imm9_abs, 12	// 5.6.83 LDR (immediate), post index variant
-m_opcode 0xFFC00400, 0xF9400000,  "ldr\0", reg64, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant
-m_opcode 0xFFC00400, 0xB9400000,  "ldr\0", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.83 LDR (immediate), immediate offset, 32bit
-m_opcode 0xFFE00C00, 0x38400400,  "ldrb", reg32, 0, reg64_ptr, 5, simm9_abs, 12	// 5.6.86 LDRB (immediate), post index variant
-m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.86 LDRB (immediate), no index variant
-m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
-m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
-m_opcode 0xF100001F, 0xF100001F,  "cmp\0", reg64, 5, imm12_abs, 10, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
-m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
-m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16 	// 5.6.119. This is MADD, but alias to muk.
-m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
-m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
-m_opcode 0xD65F03C0, 0xD65F03C0,  "ret\0", 0, 0, 0, 0, 0, 0 	// 5.6.148. RET. This only handles x30 as the return address
-m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
-m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10	// 5.6.195 SUB (immediate)
-m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16	// 5.6.214 UDIV (immediate)
-m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
+m_opcode 0xFFE00000, 0x91000000,  "add\0", reg64, 0, reg64, 5, imm12_abs, 10, 0, 0 	// 5.6.5 ADD (immediate)
+m_opcode 0xFFE00000, 0x8B000000,  "add\0", reg64, 0, reg64, 5, reg64, 16, 0, 0		// 5.6.5 ADD (shifted register). TODO: shift
+m_opcode 0xFF000000, 0x10000000,  "adr\0", reg64, 0, imm19, 5,0, 0, 0, 0		// 5.6.9 ADR
+m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0, 0, 0		// 5.6.19 B.cond
+m_opcode 0xFC000000, 0x14000000,  "b\0\0\0", imm26, 0, 0, 0, 0, 0, 0, 0			// 5.6.20
+m_opcode 0xFC000000, 0x94000000,  "bl\0\0", imm26, 0, 0, 0, 0, 0, 0, 0			// 5.6.26
+m_opcode 0xFFE00C00, 0xF8000C00,  "str\0", reg64, 0, reg64_preptr, 5, simm9_abs, 12, 0, 0 // 5.6.178 STR, store register, immediate offset, pre-index
+m_opcode 0xFFE00400, 0xF8400400,  "ldr\0", reg64, 0, reg64_ptr, 5, imm9_abs, 12, 0, 0	// 5.6.83 LDR (immediate), post index variant
+m_opcode 0xFFC00400, 0xF9400000,  "ldr\0", reg64, 0, reg64_ptr, 5, 0, 0, 0, 0	// 5.6.83 LDR (immediate), immediate offset variant
+m_opcode 0xFFC00400, 0xB9400000,  "ldr\0", reg32, 0, reg64_ptr, 5, 0, 0, 0,0 	// 5.6.83 LDR (immediate), immediate offset, 32bit
+m_opcode 0xFFE00C00, 0x38400400,  "ldrb", reg32, 0, reg64_ptr, 5, simm9_abs, 12, 0, 0	// 5.6.86 LDRB (immediate), post index variant
+m_opcode 0xFFC00400, 0x39400000,  "ldrb", reg32, 0, reg64_ptr, 5, 0, 0, 0, 0	// 5.6.86 LDRB (immediate), no index variant
+m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.42. This is ADDS, but alias to cmn.
+m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
+m_opcode 0xF100001F, 0xF100001F,  "cmp\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0, 0, 0	 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
+m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xFFE08000, 0x9B008000,  "msub", reg64, 0, reg64, 5, reg64, 16, reg64, 10 	// 5.6.132 MSUB - multiply-subtract
+m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xD65F03C0, 0xD65F03C0,  "ret\0", 0, 0, 0, 0, 0, 0, 0, 0 	// 5.6.148. RET. This only handles x30 as the return address
+m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
+m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10, 0, 0	// 5.6.195 SUB (immediate)
+m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.214 UDIV (immediate)
+m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
 opcode_finish:
