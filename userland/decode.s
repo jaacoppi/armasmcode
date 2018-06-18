@@ -10,6 +10,7 @@
 
 .global decode
 .balign 4
+.text
 
 // decode an opcode and print it
 // registers:
