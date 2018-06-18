@@ -33,7 +33,7 @@ decode:
 	// bitmask the relevant 32 bits
 	mov x10, x9
 	ldr x14, [x10]
-	mov w14, w14
+	mov w14, w14	// see if you can combine ldr & mov here
 	and x13, x14, x25
 	// compare to our table
 	add x10, x10, #4
@@ -394,7 +394,8 @@ m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0, 0, 0	 // 5
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFFE08000, 0x9B008000,  "msub", reg64, 0, reg64, 5, reg64, 16, reg64, 10 	// 5.6.132 MSUB - multiply-subtract
-m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0, 0, 0 	// 5.6.142. This is ORR, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xFFE0FFE0, 0x2A0003E0,  "mov\0", reg32, 0, reg32, 16, 0, 0, 0, 0 	// 5.6.142. This is ORR, but alias to mov.
+m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0, 0, 0 	// 5.6.142. This is ORR, but alias to mov.
 m_opcode 0xD65F03C0, 0xD65F03C0,  "ret\0", 0, 0, 0, 0, 0, 0, 0, 0 	// 5.6.148. RET. This only handles x30 as the return address
 m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
 m_opcode 0xFFE00C00, 0x38000400,  "strb", reg32, 0, reg64_ptr, 5, simm9_abs, 12, 0, 0	// 5.6.180 STRB (immediate), post index variant
