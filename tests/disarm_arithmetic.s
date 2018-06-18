@@ -11,3 +11,4 @@ add x20, x30, #128	// 5.6.5 ADD (immediate)
 add x11, x21, x0	// 5.6.5 ADD (shifted register)
 mul x0, x11, x21	// 5.6.119 MADD, alias mul
 sub x21, x0, #5		// 5.6.195 SUB (immediate)
+udiv x21, x15, x9	// 5.6.214 UDIV
