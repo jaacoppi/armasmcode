@@ -11,9 +11,6 @@ check_hashcmd() {
 }
 
 # Test some common commands to find the correct one for the system being tested on.
-echo -n "checking for unbuffer ... "
-which unbuffer || exit 1
-
 echo -n "checking for disarm64 ... "
 which bin/disarm64 || exit 1
 
@@ -35,13 +32,13 @@ test_opcode() {
 	EXPECTED=$2
 
 	echo "testing ${TEST_OPCODE}"
-	unbuffer qemu-aarch64 bin/disarm64 tests/bin/${TEST_OPCODE} | $sha1sum | awk '{ print $1 }' > tests/actual.txt
+	qemu-aarch64 bin/disarm64 tests/bin/${TEST_OPCODE} | $sha1sum | awk '{ print $1 }' > tests/actual.txt
 	echo "${EXPECTED}" > tests/expected.txt
 	diff tests/expected.txt tests/actual.txt || exit 1
 }
 
-test_opcode disarm_loadstore 8b4fd85a4ad12b68c70d08ed2d32f770018cb983
-test_opcode disarm_branches 54457581d8f7fba573ce6e0cc4d850ee3b26dd86
-test_opcode disarm_cmp 291a957d32036f4dbdc4710f52230720230427bf
-test_opcode disarm_mov e701e5a47aa95bc090df78aae591f614495d9e03
-test_opcode disarm_arithmetic e4023e677531396bf88520497ebcb9ab95d9b002
+test_opcode disarm_loadstore edbad32bdb01372d9631f88163a13e7b933670fc
+test_opcode disarm_branches 6f50c487b0f7b9930c21af18839bde276d984558
+test_opcode disarm_cmp eb0bedd82e2042a480f0b9de94b91a5c1f5ef7f7
+test_opcode disarm_mov 8dbcfef6b8952f818f2e25f7d111fa5a0236bac4
+test_opcode disarm_arithmetic 2787841e29c5c9fce2de760769ca55e757659e73

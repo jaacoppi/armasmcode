@@ -85,7 +85,7 @@ fputc:
 print a character => actually just call fwrite
 register conventions:
 	x0 (input) start address of an ascii string (=> a char)
-	x1 (input) stream, always use #0
+	x1 (input) stream, always use #1
 	output (linux write syscall)
 	 write syscall parameters: *fd, *buf, count
 =============================================================================*/
@@ -93,7 +93,7 @@ register conventions:
 	// arrange the parameters for fwrite
 	mov x1, x0
 	mov x2, #1
-	mov x0, #0
+	mov x0, #1
 	bl fwrite
 	m_callEpilogue
 	// print and advance pointer
@@ -122,7 +122,7 @@ register conventions:
 		bl fputc
 		m_pop x1
 		m_pop x0
-		ldrb w0, [x1], 1
+		ldrb w0, [x1, 1]!
 		b fputs_loop
 	fputs_nullexit: // null found, exit
 	m_callEpilogue
