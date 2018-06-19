@@ -378,6 +378,7 @@ opcodestruct_finish:
 m_opcode 0xFFE00000, 0x91000000,  "add\0", reg64, 0, reg64, 5, imm12_abs, 10, 0, 0 	// 5.6.5 ADD (immediate)
 m_opcode 0xFFE00000, 0x8B000000,  "add\0", reg64, 0, reg64, 5, reg64, 16, 0, 0		// 5.6.5 ADD (shifted register). TODO: shift
 m_opcode 0xFF000000, 0x10000000,  "adr\0", reg64, 0, imm19, 5,0, 0, 0, 0		// 5.6.9 ADR
+m_opcode 0xFFE00000, 0x8A000000,  "and\0", reg64, 0, reg64, 5, reg64, 16, 0, 0		// 5.6.12 AND (shifted register). TODO: shift
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0, 0, 0		// 5.6.19 B.cond
 m_opcode 0xFC000000, 0x14000000,  "b\0\0\0", imm26, 0, 0, 0, 0, 0, 0, 0			// 5.6.20
 m_opcode 0xFC000000, 0x94000000,  "bl\0\0", imm26, 0, 0, 0, 0, 0, 0, 0			// 5.6.26
