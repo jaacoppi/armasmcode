@@ -136,7 +136,7 @@ decode:
 			// if next operand is immediate (it should be), it prints the value  and returns to yes_preindex, resetting x16
 			yes_preindex:
 				m_fputs ascii_squarebr_close
-				m_fputs ascii_exclamation
+				m_fputs ascii_exclamation // TODO: call this writeback
 				mov x16, #0
 				b loop_operands
 			no_preindex:	// exit as normal
@@ -148,7 +148,7 @@ decode:
 	try_imms:
 	// Immediates can be signed or unsigned, relative or absolute. Find the proper value.
 	cmp x15, last_imm
-		bgt try_unalloc
+		bgt try_bitmask_imm
 
 	// set x12 whether or not to use imm2rel
 	rel_or_abs:
@@ -229,6 +229,37 @@ decode:
 
 		b endloop	// TODO: why is this here?
 
+	try_bitmask_imm:
+	cmp x15, bitmask_imm
+		bne try_unalloc
+		// bitmask immediate in the forms of N:immr:imms
+		// the pseudocode is in DecodeBitMasks, but we do a brute force / table lookup
+		add x10, x10, #1
+		mov x14, 0x001FFF // mask bits 0-12
+		bl mask_value
+		ldr x12, =bitmask_immediates
+		bitmaskloop:
+			ldrh w13, [x12],#2
+			mov x14, 0xFFFF
+			cmp x13, x14
+				beq unimplemented_bitmask_imm
+
+			ldrb w14, [x12], #1
+			cmp x15, x13
+				bne bitmaskloop
+
+			// found the right bitmask, print it
+			m_fputs commaspace
+			m_printregh x14
+			b loop_operands
+
+		unimplemented_bitmask_imm:
+			m_fputs space
+			m_fputs unimplemented_bitmask_str
+			m_fputs space
+			m_printregh x15
+			b loop_operands
+
 	try_unalloc:
 	cmp x15, unallocated
 		bne endloop	// last known opcode
@@ -305,6 +336,7 @@ conditions:
 // strings
 unimplemented_str: .asciz "Unimplemented opcode"
 unallocated_str: .asciz "Unallocated opcode"
+unimplemented_bitmask_str: .asciz "Unimplemented bitmask immediate"
 commaspace: .asciz ", "
 ascii_minus: .asciz "-"
 ascii_exclamation: .asciz "!"
@@ -344,6 +376,7 @@ ascii_squarebr_close: .asciz "]"
 .equiv simm9_abs, simm9 + imm_abs
 .equiv last_imm, simm9_abs	// for loop/switch control
 .equiv unallocated, 0x40
+.equiv bitmask_imm, 0x50
 
 
 
@@ -365,6 +398,9 @@ ascii_squarebr_close: .asciz "]"
 .endm
 
 
+debug10: .word 0xA
+debug16: .word 0x10
+debug22: .word 0x16
 
 opcode_start: // supported opcodes are listed here
 
@@ -378,6 +414,7 @@ opcodestruct_finish:
 m_opcode 0xFFE00000, 0x91000000,  "add\0", reg64, 0, reg64, 5, imm12_abs, 10, 0, 0 	// 5.6.5 ADD (immediate)
 m_opcode 0xFFE00000, 0x8B000000,  "add\0", reg64, 0, reg64, 5, reg64, 16, 0, 0		// 5.6.5 ADD (shifted register). TODO: shift
 m_opcode 0xFF000000, 0x10000000,  "adr\0", reg64, 0, imm19, 5,0, 0, 0, 0		// 5.6.9 ADR
+m_opcode 0xFFC00000, 0x92400000,  "and\0", reg64, 0, reg64, 5, bitmask_imm, 10, 0, 0		// 5.6.11 AND (immediate)
 m_opcode 0xFFE00000, 0x8A000000,  "and\0", reg64, 0, reg64, 5, reg64, 16, 0, 0		// 5.6.12 AND (shifted register). TODO: shift
 m_opcode 0xFF000010, 0x54000000,  "b.\0\0", cond, 0, imm19, 5, 0, 0, 0, 0		// 5.6.19 B.cond
 m_opcode 0xFC000000, 0x14000000,  "b\0\0\0", imm26, 0, 0, 0, 0, 0, 0, 0			// 5.6.20
@@ -404,3 +441,16 @@ m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10, 0,
 m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.214 UDIV (immediate)
 m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
 opcode_finish:
+
+bitmask_immediates:
+.hword 0x1FC0
+.byte 2
+.hword 0x1F80
+.byte 4
+.hword 0x1002
+.byte 7
+.hword 0x1000
+.byte 1
+.hword 0xFFFF
+.byte 0
+
