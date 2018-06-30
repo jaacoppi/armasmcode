@@ -37,7 +37,7 @@ test_opcode() {
 	diff tests/expected.txt tests/actual.txt || exit 1
 }
 
-test_opcode disarm_loadstore dae37af9065d19c078864070b48c5c969d7e4320
+test_opcode disarm_loadstore 0119b2f96bc6f195de22dab15bab60cf9bbd0943
 test_opcode disarm_branches 6f50c487b0f7b9930c21af18839bde276d984558
 test_opcode disarm_cmp ac73a6f0f7b4d901f625f2b5d63ae052b565f62b
 test_opcode disarm_data 8cbcbdf7d89d10a44d2ef7308f5e6224fffbbaa5

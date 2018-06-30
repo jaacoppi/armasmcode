@@ -16,6 +16,7 @@ ldr w25, [x15], 0x20	// 5.6.83, post index variant
 ldrb w17, [x29]
 ldrb w1, [x17], -0x20
 ldrb    w0, [x1,#-1]!	// 5.6.86, post index variant
+ldrh    w13, [x12],#2	// 5.6.88
 strb w10, [x1]		// 5.6.180, STRB (immediate). This is an offset variant, currently doesn't handle offsets
 strb w10, [x1], -0x1		// 5.6.180, STRB (immediate), post index
 adr x29, 4	// byte align 4
