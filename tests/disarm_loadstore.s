@@ -12,6 +12,7 @@ ldr x5, 0x100
 ldr x20, [sp], 0x40	// 5.6.83, post index variant
 ldr x10, [x20]		// 5.6.83, immediate offset, 64 bit
 ldr w10, [x20]		// 5.6.83, immediate offset, 32bit
+ldr w25, [x15], 0x20	// 5.6.83, post index variant
 ldrb w17, [x29]
 ldrb w1, [x17], -0x20
 ldrb    w0, [x1,#-1]!	// 5.6.86, post index variant
