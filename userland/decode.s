@@ -60,11 +60,19 @@ decode:
 	cmp x15, #0	// no more operands
 		beq endloop
 
-	cmp x15, cond	// conditional
-		bne try_registers
+	cmp x15, cond_invlsb	// conditionals
+		bgt try_registers
 		add x10, x10, #1
 		mov x14, 0x0000000F // mask bits 0-3
+		m_push x15
 		bl mask_value
+		m_pop x14
+		cmp x14, cond_invlsb	// invert lsb if using cond_invlsb, not if using cond
+			bne doneinvert
+			mov x14, #1
+			eor x15, x15, x14
+			m_fputs commaspace // TODO: this is a temporary fix since all invlsb's are used as operands whereas cond's are used with branches
+		doneinvert:
 		// ascii value for condition is in =conditions + cond*3
 		mov x14, #3
 		mul x15, x15, x14
@@ -74,6 +82,8 @@ decode:
 		ldr x0, =space
 		bl fputs
 		b loop_operands
+
+
 	try_registers:
 	cmp x15, last_register
 		bgt try_imms
@@ -349,6 +359,7 @@ ascii_squarebr_close: .asciz "]"
 
 // operand types
 .equiv cond, 0x1	// conditional, 4 bits
+.equiv cond_invlsb, 0x2	// conditional, 4 bits, lsb is inverted
 
 // pointer bitmap:
 // b1 = regular vs pointer
@@ -429,6 +440,7 @@ m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 /
 m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
 m_opcode 0xF100001F, 0xF100001F,  "cmp\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
 m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0, 0, 0	 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFFFF0FE0, 0x9A9F07E0,  "cset", reg64, 0, cond_invlsb, 12, 0, 0, 0, 0	 // 5.6.51 CSET
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFFE08000, 0x9B008000,  "msub", reg64, 0, reg64, 5, reg64, 16, reg64, 10 	// 5.6.132 MSUB - multiply-subtract
