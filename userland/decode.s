@@ -262,12 +262,12 @@ decode:
 		bl mask_value
 		ldr x12, =bitmask_immediates
 		bitmaskloop:
-			ldrh w13, [x12],#2
+			ldrh w13, [x12],#2 // .hword
 			mov x14, 0xFFFF
 			cmp x13, x14
 				beq unimplemented_bitmask_imm
 
-			ldrb w14, [x12], #1
+			ldr w14, [x12], #4 // .word
 			cmp x15, x13
 				bne bitmaskloop
 
@@ -452,6 +452,7 @@ m_opcode 0xFFE00C00, 0x9A800000,  "csel", reg64, 0, reg64, 5, reg64, 16, cond, 1
 m_opcode 0xFFFF0FE0, 0x9A9F07E0,  "cset", reg64, 0, cond_invlsb, 12, 0, 0, 0, 0	 // 5.6.51 CSET
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
+m_opcode 0xFFE00000, 0xB2400000,  "mov\0", reg64, 0, bitmask_imm, 5, 0, 0, 0, 0 	// 5.6.124 MOV (bitmask immediate)
 m_opcode 0xFFE08000, 0x9B008000,  "msub", reg64, 0, reg64, 5, reg64, 16, reg64, 10 	// 5.6.132 MSUB - multiply-subtract
 m_opcode 0xFFE0FFE0, 0x2A0003E0,  "mov\0", reg32, 0, reg32, 16, 0, 0, 0, 0 	// 5.6.142. This is ORR, but alias to mov.
 m_opcode 0xFF0003E0, 0xAA0003E0,  "mov\0", reg64, 0, reg64, 16, 0, 0, 0, 0 	// 5.6.142. This is ORR, but alias to mov.
@@ -463,15 +464,18 @@ m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16, 0, 0	//
 m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
 opcode_finish:
 
-bitmask_immediates:
+bitmask_immediates: // TODO: replace these with an implementation of DecodeBitmasks
+.hword 0x33F
+.word 0x3FFFFFF
+.hword 0x25F
+.word 0x7FFFF
 .hword 0x1FC0
-.byte 2
+.word 2
 .hword 0x1F80
-.byte 4
+.word 4
 .hword 0x1002
-.byte 7
+.word 7
 .hword 0x1000
-.byte 1
+.word 1
 .hword 0xFFFF
-.byte 0
-
+.word 0
