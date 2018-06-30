@@ -450,6 +450,7 @@ m_opcode 0xF100001F, 0xF100001F,  "cmp\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 /
 m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0, 0, 0	 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
 m_opcode 0xFFE00C00, 0x9A800000,  "csel", reg64, 0, reg64, 5, reg64, 16, cond, 12	 // 5.6.50 CSEL
 m_opcode 0xFFFF0FE0, 0x9A9F07E0,  "cset", reg64, 0, cond_invlsb, 12, 0, 0, 0, 0	 // 5.6.51 CSET
+m_opcode 0xFFE00000, 0xD2400000,  "eor\0", reg64, 0, reg64, 5, bitmask_imm, 10, 0, 0 	// 5.6.64 EOR (immediate)
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFFE00000, 0xB2400000,  "mov\0", reg64, 0, bitmask_imm, 5, 0, 0, 0, 0 	// 5.6.124 MOV (bitmask immediate)
@@ -465,6 +466,8 @@ m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0, 0, 0	/
 opcode_finish:
 
 bitmask_immediates: // TODO: replace these with an implementation of DecodeBitmasks
+.hword 0x1008
+.word 0x1FF
 .hword 0x33F
 .word 0x3FFFFFF
 .hword 0x25F
