@@ -49,10 +49,11 @@ decode:
 	add x10, x10, #4	// advance pointer to the last char of the mnenomic
 
 	add x12, x10, #1	// take a peek at the next byte. If it's a conditional, don't print a space
-	ldrb w12, [x12]
+	ldrb w12, [x12]		// TODO: combine add+ldrb into one ldrb with offset
 	cmp x12, cond
 		beq loop_operands
 		m_fputs space
+
 	loop_operands:
 	mov x12, #0	// reset temp
 	add x10, x10, #1
@@ -71,16 +72,28 @@ decode:
 			bne doneinvert
 			mov x14, #1
 			eor x15, x15, x14
-			m_fputs commaspace // TODO: this is a temporary fix since all invlsb's are used as operands whereas cond's are used with branches
 		doneinvert:
 		// ascii value for condition is in =conditions + cond*3
 		mov x14, #3
 		mul x15, x15, x14
 		ldr x14, =conditions
 		add x0, x14, x15
+
+// asdf TODO: know when to write commaspace, when space
+		// print ", " if needed
+		cmp x11, #0
+			bne commaspace_cond
+			bl fputs
+			m_fputs space
+			b loop_operands
+		commaspace_cond:
+		m_push x0
+		bl print_commaspace
+		mov x11, #1
+		m_pop x0
 		bl fputs
-		ldr x0, =space
-		bl fputs
+
+
 		b loop_operands
 
 
@@ -408,17 +421,12 @@ ascii_squarebr_close: .asciz "]"
 	.byte \startbit4
 .endm
 
-
-debug10: .word 0xA
-debug16: .word 0x10
-debug22: .word 0x16
-
 opcode_start: // supported opcodes are listed here
 
-// First opcode gives us the size of the struct.
 opcodestruct_start:
 m_opcode 0xFF000000, 0x58000000,  "ldr\0", reg64, 0, imm19, 5, 0, 0, 0, 0	//3.3.5 Load register (literal)
 opcodestruct_finish:
+// First opcode gives us the size of the struct.
 .equiv opcode_s, opcodestruct_finish - opcodestruct_start
 
 // rest of opcodes
@@ -440,6 +448,7 @@ m_opcode 0xFF00001F, 0xB100001F,  "cmn\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 /
 m_opcode 0xF100001F, 0x7100001F,  "cmp\0", reg32, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 32 bit variant
 m_opcode 0xF100001F, 0xF100001F,  "cmp\0", reg64, 5, imm12_abs, 10, 0, 0, 0, 0 // 5.6.45. This is SUBS, but alias to cmp. 64 bit variant
 m_opcode 0xFF00001F, 0xEB00001F,  "cmp\0", reg64, 5, reg64, 16, 0, 0, 0, 0	 // 5.6.46. This is SUBS, but alias to cmp. 64 bit variant
+m_opcode 0xFFE00C00, 0x9A800000,  "csel", reg64, 0, reg64, 5, reg64, 16, cond, 12	 // 5.6.50 CSEL
 m_opcode 0xFFFF0FE0, 0x9A9F07E0,  "cset", reg64, 0, cond_invlsb, 12, 0, 0, 0, 0	 // 5.6.51 CSET
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
