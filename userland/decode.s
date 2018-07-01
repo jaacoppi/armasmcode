@@ -455,6 +455,7 @@ m_opcode 0xFFE00C00, 0x9A800000,  "csel", reg64, 0, reg64, 5, reg64, 16, cond, 1
 m_opcode 0xFFFF0FE0, 0x9A9F07E0,  "cset", reg64, 0, cond_invlsb, 12, 0, 0, 0, 0	 // 5.6.51 CSET
 m_opcode 0xFFE00000, 0xD2400000,  "eor\0", reg64, 0, reg64, 5, bitmask_imm, 10, 0, 0 	// 5.6.64 EOR (immediate)
 m_opcode 0xFFE0FC00, 0xCA000000,  "eor\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.65 EOR (shifted register). TODO: shift
+m_opcode 0xFFE0FC00, 0x9AC02400,  "lsr\0", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.118 LSRV
 m_opcode 0xFFE0FC00, 0x9B007C00,  "mul\0", reg64, 0, reg64, 5, reg64, 16, 0, 0 	// 5.6.119. This is MADD, but alias to muk.
 m_opcode 0xFFE00000, 0xD2800000,  "mov\0", reg64, 0, imm16_abs, 5, 0, 0, 0, 0 	// 5.6.123. This is MOVZ, but alias to mov. TODO: 32/64bit, shift
 m_opcode 0xFFE00000, 0xB2400000,  "mov\0", reg64, 0, bitmask_imm, 5, 0, 0, 0, 0 	// 5.6.124 MOV (bitmask immediate)
