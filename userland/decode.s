@@ -79,7 +79,6 @@ decode:
 		ldr x14, =conditions
 		add x0, x14, x15
 
-// asdf TODO: know when to write commaspace, when space
 		// print ", " if needed
 		cmp x11, #0
 			bne commaspace_cond
@@ -185,6 +184,11 @@ decode:
 
 		// next byte has the starting bit, mask it with amount of bits in immXX
 		add x10, x10, #1
+		try_imm6:
+		cmp x15, imm6
+			bne try_simm9
+			mov x14, 0x3F
+			b found_bits
 		try_simm9:
 		cmp x15, simm9
 			bne try_imm9
@@ -222,6 +226,8 @@ decode:
 		bl mask_value
 
 		bl print_commaspace
+		mov x11, #1
+
 
 		// handle negative absolute values (relatives don't need special treatment:
 		// if type is simm9 and value gt 0x100 it's a negative in two's complement
@@ -248,9 +254,9 @@ decode:
 
 		// x16 holds the preindex setting
 		cmp x16, #1
-		beq yes_preindex
+			beq yes_preindex
 
-		b endloop	// TODO: why is this here?
+		b loop_operands
 
 	try_bitmask_imm:
 	cmp x15, bitmask_imm
@@ -384,17 +390,19 @@ ascii_squarebr_close: .asciz "]"
 .equiv reg64_preptr, 0x15	// 64bit register pointer "[x0]", 5 bits of opcode
 .equiv last_register, reg64_preptr 	// for loop/switch control
 
-.equiv imm9, 0x20
-.equiv imm12, 0x21
-.equiv imm16, 0x22
-.equiv imm19, 0x23
-.equiv imm26, 0x24
-.equiv simm9, 0x25
-.equiv codes_imm_abs, imm9_abs
+.equiv imm6, 0x20
+.equiv imm9, 0x21
+.equiv imm12, 0x22
+.equiv imm16, 0x23
+.equiv imm19, 0x24
+.equiv imm26, 0x25
+.equiv simm9, 0x26
+.equiv codes_imm_abs, imm6_abs
 .equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
-.equiv imm9_abs, imm9 + imm_abs // if more, use the immediate value as it is
-.equiv imm12_abs, imm12 + imm_abs // if more, use the immediate value as it is
-.equiv imm16_abs, imm16 + imm_abs // if more, use the immediate value as it is
+.equiv imm6_abs, imm6 + imm_abs // if more, use the immediate value as it is
+.equiv imm9_abs, imm9 + imm_abs
+.equiv imm12_abs, imm12 + imm_abs
+.equiv imm16_abs, imm16 + imm_abs
 .equiv imm19_abs, imm19 + imm_abs
 .equiv imm26_abs, imm26 + imm_abs
 .equiv simm9_abs, simm9 + imm_abs
@@ -466,6 +474,8 @@ m_opcode 0xD65F03C0, 0xD65F03C0,  "ret\0", 0, 0, 0, 0, 0, 0, 0, 0 	// 5.6.148. R
 m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
 m_opcode 0xFFE00C00, 0x38000400,  "strb", reg32, 0, reg64_ptr, 5, simm9_abs, 12, 0, 0	// 5.6.180 STRB (immediate), post index variant
 m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10, 0, 0	// 5.6.195 SUB (immediate)
+// lsl is an alias to ubfm. The conditions is complicated so it's handled in code
+m_opcode 0xFF800000, 0xD3000000,  "ubfm", reg64, 0, reg64, 5, imm6_abs, 16, imm6_abs, 10	// 5.6.212 UBFM, alias to LSL
 m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.214 UDIV (immediate)
 m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
 opcode_finish:
