@@ -44,6 +44,28 @@ decode:
 	// Found a matching opcode
 	// print mnemonic followed by a space (unless this is a conditional)
 	add x10, x10, #4
+
+	// exception: if the mnemonic is ubfm, see if we want lsl instead
+	ldr w13, [x10]	// TODO: register usage to avoid doing this ldr for each loop
+	ldr x14, =lsl_alias_str
+	ldr w14, [x14]
+	cmp x13, x14
+		bne not_lsl
+		// ubfm 5.6.212 is alias to LSL when imms != '111111' && imms + 1 == immr (NOTE: this is64bit)
+		ubfm x13, x25, #10, #15
+		mov x14, 0b111111
+		cmp x13, x14
+			beq not_lsl
+		ubfm x14, x25, #16, #21
+
+		add x13, x13, #1
+		cmp x13, x14
+			bne not_lsl
+		// checks failed, this is LSL. Point to a special opcode that wouldn't be looped otherwise
+		ldr x9, =alias_lsl
+		b loop_opcodes
+
+	not_lsl:	// handle all other opcodes. TODO: rename
 	mov x0, x10
 	bl fputs
 	add x10, x10, #4	// advance pointer to the last char of the mnenomic
@@ -186,8 +208,13 @@ decode:
 		add x10, x10, #1
 		try_imm6:
 		cmp x15, imm6
-			bne try_simm9
+			bne try_simm6_minus63
 			mov x14, 0x3F
+			b found_bits
+		try_simm6_minus63:
+		cmp x15, simm6_minus63
+			bne try_simm9
+			mov x14, 0x03F // mask bits 0-5
 			b found_bits
 		try_simm9:
 		cmp x15, simm9
@@ -233,6 +260,14 @@ decode:
 		// if type is simm9 and value gt 0x100 it's a negative in two's complement
 		// if negative, xor with 1FF and add 1 to get the absolute value
 		m_pop x14 // pop what used to be in x15 - operand byte from opcode_s
+
+		cmp x14, simm6_minus63	// special case used for UBFM/LSL
+			bne neg_simm9
+			mov x14, #63
+			sub x15, x14, x15
+			b unsigned	// TODO.. or is jumping to imm2rel_ok enough?
+
+		neg_simm9:
 		cmp x14, simm9	// TODO: this would handle relatives also since _abs is stripped earlier
 			bne unsigned
 			cmp x15, 0x100
@@ -322,6 +357,7 @@ decode:
 // x15 (output) = value
 // x13 = temp
 mask_value:
+	// TODO: could we simplify this with an ubfm x15, x15, x13, x14 or something?
 	mov x15, x25 	// opcode to be masked
 	ldrb w13, [x10]  // starting bit
 	lsr x15, x15, x13 // move starting bit to be 0
@@ -363,6 +399,7 @@ conditions:
 .asciz "al"
 
 // strings
+lsl_alias_str: .asciz "ubfm"
 unimplemented_str: .asciz "Unimplemented opcode"
 unallocated_str: .asciz "Unallocated opcode"
 unimplemented_bitmask_str: .asciz "Unimplemented bitmask immediate"
@@ -396,7 +433,8 @@ ascii_squarebr_close: .asciz "]"
 .equiv imm16, 0x23
 .equiv imm19, 0x24
 .equiv imm26, 0x25
-.equiv simm9, 0x26
+.equiv simm6_minus63, 0x26
+.equiv simm9, 0x27
 .equiv codes_imm_abs, imm6_abs
 .equiv imm_abs, 0x8	// if less than 0x28, use imm2rel to get the relative memory address
 .equiv imm6_abs, imm6 + imm_abs // if more, use the immediate value as it is
@@ -405,6 +443,7 @@ ascii_squarebr_close: .asciz "]"
 .equiv imm16_abs, imm16 + imm_abs
 .equiv imm19_abs, imm19 + imm_abs
 .equiv imm26_abs, imm26 + imm_abs
+.equiv simm6_minus63_abs, simm6_minus63 + imm_abs
 .equiv simm9_abs, simm9 + imm_abs
 .equiv last_imm, simm9_abs	// for loop/switch control
 .equiv unallocated, 0x40
@@ -479,6 +518,9 @@ m_opcode 0xFF800000, 0xD3000000,  "ubfm", reg64, 0, reg64, 5, imm6_abs, 16, imm6
 m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.214 UDIV (immediate)
 m_opcode 0x18000000, 0x00000000,  "\0\0\0\0", unallocated, 0, 0, 0, 0, 0, 0, 0	// unallocated. TODO: search the symbol table
 opcode_finish:
+
+alias_lsl:
+m_opcode 0xFF800000, 0xD3000000,  "lsl\0", reg64, 0, reg64, 5, simm6_minus63_abs, 10, 0, 0	// 5.6.114 LSL (alias of UBFM)
 
 bitmask_immediates: // TODO: replace these with an implementation of DecodeBitmasks
 .hword 0x1008
