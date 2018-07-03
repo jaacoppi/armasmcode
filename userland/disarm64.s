@@ -3,8 +3,6 @@
 // file: disarm64.s
 // Disassembler for 64 bit ARM (Aarch64)
 
-// Acknowledgements:
-
 .include "macros.s"
 .include "globals.s"
 .include "fcntl.s"
