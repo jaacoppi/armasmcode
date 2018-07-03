@@ -513,6 +513,7 @@ m_opcode 0xD65F03C0, 0xD65F03C0,  "ret\0", 0, 0, 0, 0, 0, 0, 0, 0 	// 5.6.148. R
 m_opcode 0xFFE00C00, 0x39000000,  "strb", reg32, 0, reg64_ptr, 5, 0, 0, 0, 0	// 5.6.180 STRB (immediate), no index variant. TODO: add possibility to have an offset
 m_opcode 0xFFE00C00, 0x38000400,  "strb", reg32, 0, reg64_ptr, 5, simm9_abs, 12, 0, 0	// 5.6.180 STRB (immediate), post index variant
 m_opcode 0xFFC00000, 0xD1000000,  "sub\0", reg64, 0, reg64, 5, imm12_abs, 10, 0, 0	// 5.6.195 SUB (immediate)
+m_opcode 0xFFE0FC00, 0xCB000000,  "sub\0", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.196 SUB (shifted register). TODO: shift
 // lsl is an alias to ubfm. The conditions is complicated so it's handled in code
 m_opcode 0xFF800000, 0xD3000000,  "ubfm", reg64, 0, reg64, 5, imm6_abs, 16, imm6_abs, 10	// 5.6.212 UBFM, alias to LSL
 m_opcode 0xFFE0FA00, 0x9AC00800,  "udiv", reg64, 0, reg64, 5, reg64, 16, 0, 0	// 5.6.214 UDIV (immediate)
